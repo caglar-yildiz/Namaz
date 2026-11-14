@@ -11,10 +11,32 @@ import androidx.compose.ui.unit.dp
 import android.content.SharedPreferences
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.ZonedDateTime
+import java.time.ZoneId
 
 @Composable
 fun WorshipScreen() {
     val context = LocalContext.current
+    var currentDay by remember { mutableStateOf(WorshipStore.today()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) currentDay = WorshipStore.today()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(currentDay) {
+        val now = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"))
+        val nextDay = now.toLocalDate().plusDays(1).atStartOfDay(now.zone)
+        delay(Duration.between(now, nextDay).toMillis().coerceAtLeast(1000L) + 250L)
+        currentDay = WorshipStore.today()
+    }
     var showHistory by remember { mutableStateOf(false) }
     var revision by remember { mutableIntStateOf(0) }
     DisposableEffect(context) {
@@ -30,7 +52,7 @@ fun WorshipScreen() {
         }
         return
     }
-    val date = WorshipStore.today()
+    val date = currentDay
     val checked = remember(date, revision) {
         mutableStateMapOf<String, Boolean>().apply {
             WorshipStore.prayers.forEach { put(it, WorshipStore.completed(context, date, it)) }
