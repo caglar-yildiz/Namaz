@@ -53,7 +53,7 @@ object ReligiousDayReminders {
         val now = ZonedDateTime.now(zone)
         ReligiousDaysData.days.sortedWith(compareBy({ it.date }, { it.name }))
             .take(MAX_EVENTS).forEachIndexed { index, event ->
-                val fireAt = event.date.minusDays(leadDays(app)).atTime(9, 0).atZone(zone)
+                val fireAt = event.date.minusDays(leadDays(app).toLong()).atTime(9, 0).atZone(zone)
                 if (fireAt.isAfter(now) && fireAt.isBefore(now.plusDays(40))) {
                     val pending = intent(app, index)
                     alarms.setAndAllowWhileIdle(
@@ -70,7 +70,7 @@ object ReligiousDayReminders {
         val event = ReligiousDaysData.days.sortedWith(compareBy({ it.date }, { it.name }))
             .getOrNull(id) ?: return
         val date = LocalDate.now(zone)
-        if (date != event.date.minusDays(leadDays(context))) return
+        if (date != event.date.minusDays(leadDays(context).toLong())) return
         val message = if (leadDays(context) == 1)
             "Yarın: ${event.name}" else "Bugün: ${event.name}"
         ReminderNotifications.send(context, "Dini gün hatırlatması", message)
