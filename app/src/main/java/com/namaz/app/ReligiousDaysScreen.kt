@@ -19,10 +19,48 @@ import java.util.Locale
 
 data class ReligiousDay(val date: LocalDate, val name: String, val description: String)
 object ReligiousDaysData {
-    // Pilot-only entry; verify against official calendar before publishing.
-    val days = listOf(ReligiousDay(LocalDate.of(2026,12,10),
-        "Üç Ayların Başlangıcı ve Regaib Kandili",
-        "Pilot kayıt. Resmî tarih doğrulaması bekleniyor."))
+    // Official Diyanet 2026/2027 religious days lists.
+    // https://vakithesaplama.diyanet.gov.tr/dinigunler.php?yil=2026
+    // https://vakithesaplama.diyanet.gov.tr/icerik.php?icerik=154
+    val days = listOf(
+        ReligiousDay(LocalDate.of(2026, 1, 15), "Miraç Kandili", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 2, 2), "Berat Kandili", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 2, 19), "Ramazan Başlangıcı", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 3, 16), "Kadir Gecesi", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 3, 19), "Ramazan Bayramı Arefesi", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 3, 20), "Ramazan Bayramı 1. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 3, 21), "Ramazan Bayramı 2. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 3, 22), "Ramazan Bayramı 3. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 5, 26), "Kurban Bayramı Arefesi", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 5, 27), "Kurban Bayramı 1. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 5, 28), "Kurban Bayramı 2. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 5, 29), "Kurban Bayramı 3. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 5, 30), "Kurban Bayramı 4. Gün", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 6, 16), "Hicri Yılbaşı", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 6, 25), "Aşure Günü", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 8, 24), "Mevlid Kandili", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 12, 10), "Üç Ayların Başlangıcı", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2026, 12, 10), "Regaib Kandili", "Diyanet İşleri Başkanlığı 2026 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 1, 4), "Miraç Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 1, 22), "Berat Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 2, 8), "Ramazan Başlangıcı", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 3, 5), "Kadir Gecesi", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 3, 8), "Ramazan Bayramı Arefesi", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 3, 9), "Ramazan Bayramı 1. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 3, 10), "Ramazan Bayramı 2. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 3, 11), "Ramazan Bayramı 3. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 5, 15), "Kurban Bayramı Arefesi", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 5, 16), "Kurban Bayramı 1. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 5, 17), "Kurban Bayramı 2. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 5, 18), "Kurban Bayramı 3. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 5, 19), "Kurban Bayramı 4. Gün", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 6, 6), "Hicri Yılbaşı", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 6, 15), "Aşure Günü", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 8, 13), "Mevlid Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 11, 29), "Üç Ayların Başlangıcı", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 12, 2), "Regaib Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi."),
+        ReligiousDay(LocalDate.of(2027, 12, 24), "Miraç Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi.")
+    )
 }
 private val forest = Color(0xFF103E36)
 private val emerald = Color(0xFF14594B)
@@ -37,7 +75,7 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
     val fmt = remember { DateTimeFormatter.ofPattern("d MMMM yyyy", locale) }
     val monthFmt = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
     var month by remember { mutableStateOf(YearMonth.from(today)) }
-    var selected by remember { mutableStateOf<ReligiousDay?>(null) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     val upcoming = days.filter { !it.date.isBefore(today) }.sortedBy { it.date }
     val next = upcoming.firstOrNull()
     val monthEvents = days.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
@@ -103,19 +141,19 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                                 Box(Modifier.weight(1f).height(46.dp), contentAlignment = Alignment.Center) {
                                     if (number in 1..month.lengthOfMonth()) {
                                         val date = month.atDay(number)
-                                        val event = days.firstOrNull { it.date == date }
+                                        val hasEvent = days.any { it.date == date }
                                         val bg = when {
-                                            event != null -> emerald
+                                            hasEvent -> emerald
                                             date == today -> mint
                                             else -> Color.Transparent
                                         }
                                         Box(Modifier.size(38.dp)
                                             .background(bg, RoundedCornerShape(12.dp))
-                                            .clickable(enabled = event != null) { selected = event },
+                                            .clickable(enabled = hasEvent) { selectedDate = date },
                                             contentAlignment = Alignment.Center) {
-                                            Text(number.toString() + if (event != null) "•" else "",
-                                                color = if (event != null) Color.White else forest,
-                                                fontWeight = if (event != null || date == today)
+                                            Text(number.toString() + if (hasEvent) "•" else "",
+                                                color = if (hasEvent) Color.White else forest,
+                                                fontWeight = if (hasEvent || date == today)
                                                     FontWeight.Bold else FontWeight.Normal)
                                         }
                                     }
@@ -134,31 +172,37 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
         if (monthEvents.isEmpty()) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Text("Bu ay için henüz kayıt bulunmuyor. Takvim tamamlanmadığından bu, özel gün olmadığı anlamına gelmez.",
+                    Text("Bu ay için listelenen özel gün bulunmuyor.",
                         Modifier.fillMaxWidth().padding(18.dp))
                 }
             }
         } else {
-            items(monthEvents) { event -> ReligiousEventCard(event, fmt) { selected = event } }
+            items(monthEvents) { event -> ReligiousEventCard(event, fmt) { selectedDate = event.date } }
         }
         item { Text("Yaklaşan tarihler", style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold) }
         if (upcoming.isEmpty()) {
             item { Text("Yeni tarih kayıtları bekleniyor.") }
         } else {
-            items(upcoming) { event -> ReligiousEventCard(event, fmt) { selected = event } }
+            items(upcoming) { event -> ReligiousEventCard(event, fmt) { selectedDate = event.date } }
         }
         item {
-            Text("Pilot takvim: Resmî tarihler doğrulanmadan kesin bilgi veya bildirim taahhüdü verilmez.",
+            Text("Kaynak: Diyanet İşleri Başkanlığı 2026–2027 dini günler listeleri. Tarihler güncellenebilir; bildirim entegrasyonu ayrıca test edilmelidir.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-    selected?.let { event ->
-        AlertDialog(onDismissRequest = { selected = null },
-            title = { Text(event.name) },
-            text = { Text(event.date.format(fmt) + "\n\n" + event.description) },
-            confirmButton = { TextButton(onClick = { selected = null }) { Text("Kapat") } })
+    selectedDate?.let { date ->
+        val eventsOnDate = days.filter { it.date == date }
+        AlertDialog(onDismissRequest = { selectedDate = null },
+            title = { Text(date.format(fmt)) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                eventsOnDate.forEach { event ->
+                    Text(event.name, fontWeight = FontWeight.Bold)
+                    Text(event.description, style = MaterialTheme.typography.bodySmall)
+                }
+            } },
+            confirmButton = { TextButton(onClick = { selectedDate = null }) { Text("Kapat") } })
     }
 }
 
