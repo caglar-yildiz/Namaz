@@ -69,3 +69,10 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - Ayarlar > İbadet takibi açıkken yaklaşık 21.00'de, yalnızca 5/5 işaretlenmemişse günlük kontrol bildirimi planlanır. İşaretlenmemiş namaz kılınmamış olarak yorumlanmaz.
 - Boot ve saat değişikliklerinde bu alarm yeniden planlanır. Android bildirim izni ve pil tasarrufu kısıtları geçerlidir; tam zaman garantisi yoktur.
 - Kalan işler: gece yarısında açık ekran yenileme, küçük ekran takvim yerleşimi, ayarlar/hatırlatıcılar arasında anlık kategori senkronizasyonu, gerçek cihaz ve derleme testleri.
+
+## Tercih senkronizasyonu ve dar ekran iyileştirmesi
+
+- Ayarlar ve Hatırlatıcılar ekranları aynı SharedPreferences dosyasını dinleyerek kategori, ses, namaz ve önceden bildirim tercihlerini yeniden okur.
+- Namaz tercihi ve bildirim öncesi dakika değişiklikleri WorkManager üzerinden yeniden planlanır.
+- Haftalık ve aylık takvim satırlarına yatay kaydırma ve sabit hücre genişliği eklendi; küçük ekran davranışı cihazda henüz doğrulanmadı.
+- Kalan: gece yarısı açık ekran yenileme, aylık başlıklarla yatay kaydırma hizası, derleme ve cihaz testleri, resmî vakit karşılaştırması.
