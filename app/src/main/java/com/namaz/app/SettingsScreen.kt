@@ -34,6 +34,7 @@ fun SettingsScreen() {
                         onCheckedChange = {
                             enabled[category] = it
                             ReminderPreferences.setEnabled(context, category, it)
+                            if (category == "İbadet takibi") WorshipReminder.reconcile(context)
                             if (category == "Namaz vakitleri") {
                                 if (it) PrayerRefreshWork.refreshNow(context)
                                 else PrayerTimesService.cancelAll(context)
@@ -57,7 +58,7 @@ fun SettingsScreen() {
             }
         }
         item {
-            Text("Bu tercihler kaydedilir. Ses ve gerçek bildirim gönderimi, Android bildirim kanalları ve izinleri bağlandığında etkinleşir.",
+            Text("İbadet takibi açıksa her akşam yaklaşık 21.00’de günlüğünüzü kontrol etmeniz hatırlatılır. Android bildirim izni gerekir; pil tasarrufu bildirimi geciktirebilir.",
                 style = MaterialTheme.typography.bodySmall)
         }
     }
