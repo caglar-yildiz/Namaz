@@ -87,6 +87,15 @@ class ReminderReceiver : BroadcastReceiver() {
         if (intent.getBooleanExtra("test", false)) {
             ReminderNotifications.send(context, "Namaz test bildirimi",
                 "Bildirim altyapısı çalışıyor. Bu gerçek bir namaz vakti değildir.")
+            return
         }
+        val prayer = intent.getStringExtra("prayer") ?: return
+        val date = intent.getStringExtra("date") ?: return
+        val prefs = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
+        if (!ReminderPreferences.enabled(context, "Namaz vakitleri") ||
+            !prefs.getBoolean(prayer, false)) return
+        if (date != java.time.LocalDate.now(java.time.ZoneId.of("Europe/Istanbul")).toString()) return
+        ReminderNotifications.send(context, "$prayer vakti hatırlatması",
+            "Seçtiğiniz namaz vakti için hatırlatma.")
     }
 }
