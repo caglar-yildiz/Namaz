@@ -46,3 +46,11 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - Ağ hatalarında mevcut alarmlar korunuyor; fakat yeniden başlatma sonrası ağ yoksa alarmlar kurtarılamayabilir.
 - Yaklaşık alarmlar Doze/pil kısıtları nedeniyle geç gelebilir. Dakika hassasiyetinin ürün gereksinimi ayrıca kararlaştırılmalı.
 - Derleme, cihaz testi ve resmî Diyanet vakit doğrulaması yapılmadı. Bu özellik tamamlandı sayılmıyor.
+
+## İbadet sekmesi (MVP)
+
+- Günlük beş namaz için yerel işaretleme ve 0–5 ilerleme göstergesi.
+- Sübhanallah, Elhamdülillah, Allahu ekber ve Salavat için birbirinden bağımsız günlük zikirmatik.
+- 33, 99 ve 100 hedefleri; onaylı sıfırlama; SharedPreferences ile cihazda saklama.
+- Takip kayıtları otomatik olarak bildirim göndermez; ibadet takibi bildirim kategorisi henüz işlevsel değildir.
+- Eksikler: tarih geçmişi ve düzeltme, cihazlar arası yedekleme, veri dışa aktarma, gece yarısında açık ekranın yenilenmesi, erişilebilirlik ve cihaz/derleme testleri.
