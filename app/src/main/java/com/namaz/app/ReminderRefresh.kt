@@ -67,7 +67,11 @@ class ReminderRefreshReceiver : BroadcastReceiver() {
             intent.action == Intent.ACTION_TIMEZONE_CHANGED ||
             intent.component?.className == ReminderRefreshReceiver::class.java.name) {
             val pending = goAsync()
-            ReminderRefresh.refreshAsync(context) { pending.finish() }
+            try {
+                PrayerRefreshWork.refreshNow(context)
+            } finally {
+                pending.finish()
+            }
         }
     }
 }
