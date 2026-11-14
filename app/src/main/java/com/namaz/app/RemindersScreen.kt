@@ -134,6 +134,31 @@ fun RemindersScreen() {
             }
         }
         item { HorizontalDivider() }
+        item {
+            Text("Kandil ve bayram bildirimleri", style = MaterialTheme.typography.titleLarge)
+            Text("Bildirimler yalnızca bu kategori açıksa gönderilir. Saat: yaklaşık 09.00.")
+            val religiousEnabled = ReminderPreferences.enabled(context, "Kandil ve bayramlar")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Dini günleri hatırlat", modifier = Modifier.weight(1f))
+                Switch(checked = religiousEnabled, onCheckedChange = {
+                    ReminderPreferences.setEnabled(context, "Kandil ve bayramlar", it)
+                    ReligiousDayReminders.reconcile(context)
+                    if (it && Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context))
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                })
+            }
+            listOf(1 to "Bir gün önce", 0 to "Aynı gün").forEach { (days, label) ->
+                Row(Modifier.fillMaxWidth()) {
+                    RadioButton(
+                        selected = ReligiousDayReminders.leadDays(context) == days,
+                        enabled = religiousEnabled,
+                        onClick = { ReligiousDayReminders.setLeadDays(context, days); preferencesRevision++ }
+                    )
+                    Text(label, modifier = Modifier.padding(top = 12.dp))
+                }
+            }
+        }
+        item { HorizontalDivider() }
         item { Text("Ne kadar önce hatırlatılsın?", style = MaterialTheme.typography.titleMedium) }
         item {
             listOf(0, 5, 10, 15, 30).forEach { minutes ->
