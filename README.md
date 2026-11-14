@@ -38,3 +38,11 @@ APK derlemesi ve GitHub Actions en son yapılacak. UI kodunun commitlenmesi, der
 ## Teknoloji
 
 Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
+
+## Güvenilirlik notları (14 Kasım 2026)
+
+- Tarihe bağlı alarm kimlikleri eklendi; gece yarısı kimlik çakışması önlenmeye çalışıldı.
+- BroadcastReceiver, asenkron işlem için `goAsync()` kullanıyor. Ancak API çağrısı iki güne yayıldığında Android'in yayın süresi sınırını aşabilir: üretim için WorkManager veya önbellekli kısa iş tercih edilmeli.
+- Ağ hatalarında mevcut alarmlar korunuyor; fakat yeniden başlatma sonrası ağ yoksa alarmlar kurtarılamayabilir.
+- Yaklaşık alarmlar Doze/pil kısıtları nedeniyle geç gelebilir. Dakika hassasiyetinin ürün gereksinimi ayrıca kararlaştırılmalı.
+- Derleme, cihaz testi ve resmî Diyanet vakit doğrulaması yapılmadı. Bu özellik tamamlandı sayılmıyor.
