@@ -8,7 +8,7 @@ Türkiye odaklı Kotlin / Jetpack Compose Android namaz vakitleri ve dini günle
 | --- | --- |
 | Ana Sayfa | İlk iskelet korunuyor; namaz vakti entegrasyonu yapılmadı |
 | Dini Günler | Takvim, ay geçişleri, yaklaşan gün kartı ve detay diyaloğu kodlandı; yalnızca ilk 2026 kaydı eklendi |
-| Hatırlatıcılar | Geliştirme aşamasında; gerçek bildirim altyapısı henüz yok |
+| Hatırlatıcılar | Kalıcı tercihler, bildirim izni, Android kanalları ve yaklaşık 1 dakikalık test bildirimi kodlandı; gerçek namaz vakti zamanlaması yok |
 | İbadet | Yer tutucu ekran |
 
 ## Eksikler / takip listesi
@@ -16,7 +16,10 @@ Türkiye odaklı Kotlin / Jetpack Compose Android namaz vakitleri ve dini günle
 - [ ] Dini Günler: 2026'nın kalan ve 2027'nin tüm kandil/bayram tarihlerini resmî Diyanet kaynağından doğrulayıp ekle; takvim verisini kapsamlı test et
 - [ ] Hatırlatıcılar: namaz bazında aç/kapat, önceden bildirim süresi ve tercihlerin kalıcı saklanması
 - [ ] Hatırlatıcılar: doğrulanmış namaz vakti sağlayıcısı, şehir/ilçe seçimi ve zaman dilimi
-- [ ] Hatırlatıcılar: Android 13+ POST_NOTIFICATIONS izni, bildirim kanalı ve gerçek zamanlama (AlarmManager/WorkManager gereksinimlerine göre)
+- [x] Hatırlatıcılar: Android 13+ POST_NOTIFICATIONS izni isteme, bildirim kanalları ve test bildirimi altyapısı kodlandı (cihaz testi bekliyor)
+- [ ] Hatırlatıcılar: doğrulanmış vakit verisiyle gerçek zamanlama ve iptal/yeniden planlama
+- [ ] Bildirim sesi: 'hafif kısa ton' için özgün kısa ses dosyası; şu an sistem varsayılan sesine eşleniyor
+- [ ] Ayarlar ve Hatırlatıcılar sekmeleri arasında anlık tercih senkronizasyonu ve gerçek kategori bazlı gönderim
 - [ ] Hatırlatıcılar: yeniden başlatma, saat dilimi değişimi, pil optimizasyonu ve kesin alarm izni senaryolarını test et
 - [ ] İbadet: zikirmatik ve günlük namaz takip ekranları
 - [ ] Ana Sayfa: diğer sekmelerden özet kartlar ve namaz vakitleri
