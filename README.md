@@ -76,3 +76,13 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - Namaz tercihi ve bildirim öncesi dakika değişiklikleri WorkManager üzerinden yeniden planlanır.
 - Haftalık ve aylık takvim satırlarına yatay kaydırma ve sabit hücre genişliği eklendi; küçük ekran davranışı cihazda henüz doğrulanmadı.
 - Kalan: gece yarısı açık ekran yenileme, aylık başlıklarla yatay kaydırma hizası, derleme ve cihaz testleri, resmî vakit karşılaştırması.
+
+## 14 Kasım 2026 — arayüz düzeltmeleri
+
+- [x] İbadet ve geçmiş ekranlarında İstanbul saatine göre gece yarısı tarih yenilemesi ve uygulama ön plana geldiğinde tarih kontrolü eklendi.
+- [x] Aylık takvim başlığı ve tüm hafta satırları tek yatay kaydırma alanına alındı; hücreler aynı genişlikte.
+- [ ] Gradle/Android derlemesi: bu çalışma ortamında Android SDK ve Gradle bulunmadığından çalıştırılamadı.
+- [ ] Gerçek cihazda gece yarısı, küçük ekran ve bildirim testleri.
+- [ ] Tüm ekranlar arasında anlık senkronizasyonun cihazda doğrulanması.
+
+Bu değişiklikler kod seviyesindedir; APK veya başarılı build iddiası değildir.
