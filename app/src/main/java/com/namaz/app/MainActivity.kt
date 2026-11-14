@@ -44,7 +44,7 @@ fun NamazApp() {
                 Tab.HOME -> NamazHome()
                 Tab.DAYS -> ReligiousDaysScreen()
                 Tab.REMINDERS -> RemindersScreen()
-                Tab.WORSHIP -> Placeholder("İbadet")
+                Tab.WORSHIP -> WorshipScreen()
                 Tab.SETTINGS -> SettingsScreen()
             }
         }
