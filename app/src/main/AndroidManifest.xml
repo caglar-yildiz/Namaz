@@ -13,6 +13,7 @@
         </activity>
         <receiver android:name=".WorshipReminderReceiver" android:exported="false"/>
         <receiver android:name=".ReminderReceiver" android:exported="false"/>
+        <receiver android:name=".ReligiousDayReceiver" android:exported="false"/>
         <receiver android:name=".ReminderRefreshReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
