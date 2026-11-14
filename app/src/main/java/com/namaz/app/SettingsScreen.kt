@@ -7,17 +7,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.content.SharedPreferences
+import android.content.Context
 
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
+    var preferencesRevision by remember { mutableIntStateOf(0) }
+    DisposableEffect(context) {
+        val prefsListenerStore = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> preferencesRevision++ }
+        prefsListenerStore.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefsListenerStore.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     // Read again when the screen is reopened to reflect changes from Reminders.
-    val enabled = remember {
+    val enabled = remember(context, preferencesRevision) {
         mutableStateMapOf<String, Boolean>().apply {
             ReminderPreferences.categories.forEach { put(it, ReminderPreferences.enabled(context, it)) }
         }
     }
-    var selectedSound by remember { mutableStateOf(ReminderPreferences.sound(context)) }
+    val selectedSound = remember(context, preferencesRevision) { ReminderPreferences.sound(context) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -32,7 +42,6 @@ fun SettingsScreen() {
                     Switch(
                         checked = enabled[category] == true,
                         onCheckedChange = {
-                            enabled[category] = it
                             ReminderPreferences.setEnabled(context, category, it)
                             if (category == "İbadet takibi") WorshipReminder.reconcile(context)
                             if (category == "Namaz vakitleri") {
@@ -50,7 +59,6 @@ fun SettingsScreen() {
             item {
                 Row(Modifier.fillMaxWidth()) {
                     RadioButton(selected = selectedSound == key, onClick = {
-                        selectedSound = key
                         ReminderPreferences.setSound(context, key)
                     })
                     Text(label, modifier = Modifier.padding(top = 12.dp))
