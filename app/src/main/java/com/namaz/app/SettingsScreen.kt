@@ -35,7 +35,7 @@ fun SettingsScreen() {
                             enabled[category] = it
                             ReminderPreferences.setEnabled(context, category, it)
                             if (category == "Namaz vakitleri") {
-                                if (it) ReminderRefresh.refreshAsync(context)
+                                if (it) PrayerRefreshWork.refreshNow(context)
                                 else PrayerTimesService.cancelAll(context)
                             }
                         }
