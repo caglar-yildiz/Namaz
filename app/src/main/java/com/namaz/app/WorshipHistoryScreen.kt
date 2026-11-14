@@ -28,6 +28,8 @@ fun WorshipHistoryScreen() {
     val startOfWeek = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
     val week = (0..6).map { startOfWeek.plusDays(it.toLong()) }
     val monthDays = (1..month.lengthOfMonth()).map { month.atDay(it) }
+    // Read revision during composition to refresh persisted values after edits.
+    val refreshMarker = revision
     val cells: List<LocalDate?> = List(month.atDay(1).dayOfWeek.value - 1) { null } + monthDays
     val weekDates = week.filter { !it.isAfter(today) }
     val monthDates = monthDays.filter { !it.isAfter(today) }
@@ -65,6 +67,7 @@ fun WorshipHistoryScreen() {
             }
         }
         item { Text("Aylık kayıtlar (gün / tamamlanan namaz)", style = MaterialTheme.typography.titleMedium) }
+        item { Row(Modifier.fillMaxWidth()) { listOf("Pzt","Sal","Çar","Per","Cum","Cmt","Paz").forEach { label -> Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall) } } }
         items(cells.chunked(7)) { days ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 days.forEach { date ->
