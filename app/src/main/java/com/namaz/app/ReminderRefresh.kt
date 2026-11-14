@@ -24,7 +24,7 @@ object ReminderRefresh {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(CITY, null)?.takeIf { it.isNotBlank() }
 
-    fun refreshAsync(context: Context) {
+    fun refreshAsync(context: Context, finished: (() -> Unit)? = null) {
         val app = context.applicationContext
         executor.execute {
             try {
@@ -38,6 +38,7 @@ object ReminderRefresh {
                 // Preserve previously scheduled alarms if network refresh fails.
             } finally {
                 scheduleDaily(app)
+                finished?.invoke()
             }
         }
     }
@@ -65,7 +66,8 @@ class ReminderRefreshReceiver : BroadcastReceiver() {
             intent.action == Intent.ACTION_TIME_CHANGED ||
             intent.action == Intent.ACTION_TIMEZONE_CHANGED ||
             intent.component?.className == ReminderRefreshReceiver::class.java.name) {
-            ReminderRefresh.refreshAsync(context)
+            val pending = goAsync()
+            ReminderRefresh.refreshAsync(context) { pending.finish() }
         }
     }
 }
