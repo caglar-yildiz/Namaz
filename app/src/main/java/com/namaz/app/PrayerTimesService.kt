@@ -75,7 +75,12 @@ object PrayerTimesService {
         var scheduled = 0
         // Fetch first: on network failure, preserve existing alarms.
         val fetched = if (category) (0..1).associateWith { offset ->
-            fetch(today.plusDays(offset.toLong()), city)
+            val date = today.plusDays(offset.toLong())
+            try {
+                fetch(date, city).also { PrayerTimeCache.save(context, city, date, it) }
+            } catch (failure: Exception) {
+                PrayerTimeCache.read(context, city, date) ?: throw failure
+            }
         } else emptyMap()
         // Date-stable IDs prevent midnight collisions.
         cancelAll(context)
