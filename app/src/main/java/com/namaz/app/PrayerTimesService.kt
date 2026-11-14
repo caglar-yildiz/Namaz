@@ -49,16 +49,35 @@ object PrayerTimesService {
         }
     }
 
+    fun cancelAll(context: Context) {
+        val manager = context.getSystemService(AlarmManager::class.java)
+        for (dayOffset in 0..1) for (index in names.keys.indices) {
+            val intent = Intent(context, ReminderReceiver::class.java)
+            val pending = PendingIntent.getBroadcast(
+                context, dayOffset * 10 + index + 1000, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pending != null) {
+                manager.cancel(pending)
+                pending.cancel()
+            }
+        }
+    }
+
     fun scheduleNextDay(context: Context, city: String): Int {
         val today = LocalDate.now(zone)
         val prefs = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
         val manager = context.getSystemService(AlarmManager::class.java)
         val category = ReminderPreferences.enabled(context, "Namaz vakitleri")
         var scheduled = 0
+        // Fetch first: on network failure, preserve existing alarms.
+        val fetched = if (category) (0..1).associateWith { offset ->
+            fetch(today.plusDays(offset.toLong()), city)
+        } else emptyMap()
         // Cancel existing alarms for the same stable request IDs before rescheduling.
         for (dayOffset in 0..1) {
             val date = today.plusDays(dayOffset.toLong())
-            val times = if (category) fetch(date, city) else emptyMap()
+            val times = fetched[dayOffset] ?: emptyMap()
             names.keys.forEachIndexed { index, name ->
                 val requestId = dayOffset * 10 + index + 1000
                 val intent = Intent(context, ReminderReceiver::class.java)
