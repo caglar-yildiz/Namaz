@@ -20,7 +20,8 @@ private enum class Tab(val label: String, val icon: String) {
     HOME("Ana Sayfa", "⌂"),
     DAYS("Dini Günler", "▦"),
     REMINDERS("Hatırlatıcılar", "◷"),
-    WORSHIP("İbadet", "◎")
+    WORSHIP("İbadet", "◎"),
+    SETTINGS("Ayarlar", "⚙")
 }
 
 @Composable
@@ -44,6 +45,7 @@ fun NamazApp() {
                 Tab.DAYS -> ReligiousDaysScreen()
                 Tab.REMINDERS -> RemindersScreen()
                 Tab.WORSHIP -> Placeholder("İbadet")
+                Tab.SETTINGS -> SettingsScreen()
             }
         }
     }
