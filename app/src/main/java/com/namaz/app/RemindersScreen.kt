@@ -18,6 +18,7 @@ fun RemindersScreen() {
     val prefs = remember(context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
+    var prayerCategoryEnabled by remember { mutableStateOf(ReminderPreferences.enabled(context, "Namaz vakitleri")) }
     val enabled = remember {
         mutableStateMapOf<String, Boolean>().apply {
             prayerNames.forEach { name -> put(name, prefs.getBoolean(name, false)) }
@@ -40,6 +41,15 @@ fun RemindersScreen() {
                     "entegre edildiğinde çalışacaktır."
             )
         }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Namaz vakti bildirimleri", modifier = Modifier.weight(1f))
+                Switch(checked = prayerCategoryEnabled, onCheckedChange = {
+                    prayerCategoryEnabled = it
+                    ReminderPreferences.setEnabled(context, "Namaz vakitleri", it)
+                })
+            }
+        }
         item { Text("Namaz vakitleri", style = MaterialTheme.typography.titleLarge) }
         prayerNames.forEach { name ->
             item {
@@ -50,6 +60,7 @@ fun RemindersScreen() {
                     Text(name, modifier = Modifier.weight(1f))
                     Switch(
                         checked = enabled[name] == true,
+                        enabled = prayerCategoryEnabled,
                         onCheckedChange = { value ->
                             enabled[name] = value
                             prefs.edit().putBoolean(name, value).apply()
