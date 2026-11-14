@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.content.SharedPreferences
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -15,6 +16,13 @@ import java.util.Locale
 fun WorshipScreen() {
     val context = LocalContext.current
     var showHistory by remember { mutableStateOf(false) }
+    var revision by remember { mutableIntStateOf(0) }
+    DisposableEffect(context) {
+        val prefs = context.getSharedPreferences("worship_journal_v1", android.content.Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     if (showHistory) {
         Column {
             TextButton(onClick = { showHistory = false }) { Text("← İbadet ekranına dön") }
@@ -23,13 +31,13 @@ fun WorshipScreen() {
         return
     }
     val date = WorshipStore.today()
-    val checked = remember(date) {
+    val checked = remember(date, revision) {
         mutableStateMapOf<String, Boolean>().apply {
             WorshipStore.prayers.forEach { put(it, WorshipStore.completed(context, date, it)) }
         }
     }
     var selectedPhrase by remember { mutableStateOf(WorshipStore.phrases.first()) }
-    var count by remember(date, selectedPhrase) {
+    var count by remember(date, selectedPhrase, revision) {
         mutableIntStateOf(WorshipStore.count(context, selectedPhrase))
     }
     var target by remember { mutableIntStateOf(WorshipStore.target(context)) }
