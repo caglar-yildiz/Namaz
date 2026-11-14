@@ -62,3 +62,10 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - Geçmiş gün seçerek beş vakit kaydını düzeltme; gelecek günler düzenlenemez.
 - Son 30 günün toplam işaret sayısı; boş kayıtlar kılınmamış namaz olarak yorumlanmaz.
 - Eksikler: takvim haftası hizalaması (şu an yedişerli gün grupları), tarih değişiminde ekran yenileme, geçmişten dönüşte ana ekranın tazelenmesi, erişilebilirlik, derleme ve cihaz testleri.
+
+## İbadet takibi senkronizasyonu ve bildirimleri
+
+- Günlük İbadet ve geçmiş ekranları SharedPreferences değişikliklerini dinleyerek kayıtları yeniden okur (cihaz testi yapılmadı).
+- Ayarlar > İbadet takibi açıkken yaklaşık 21.00'de, yalnızca 5/5 işaretlenmemişse günlük kontrol bildirimi planlanır. İşaretlenmemiş namaz kılınmamış olarak yorumlanmaz.
+- Boot ve saat değişikliklerinde bu alarm yeniden planlanır. Android bildirim izni ve pil tasarrufu kısıtları geçerlidir; tam zaman garantisi yoktur.
+- Kalan işler: gece yarısında açık ekran yenileme, küçük ekran takvim yerleşimi, ayarlar/hatırlatıcılar arasında anlık kategori senkronizasyonu, gerçek cihaz ve derleme testleri.
