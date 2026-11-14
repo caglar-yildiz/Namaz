@@ -43,6 +43,7 @@ fun SettingsScreen() {
                         checked = enabled[category] == true,
                         onCheckedChange = {
                             ReminderPreferences.setEnabled(context, category, it)
+                            if (category == "Kandil ve bayramlar") ReligiousDayReminders.reconcile(context)
                             if (category == "İbadet takibi") WorshipReminder.reconcile(context)
                             if (category == "Namaz vakitleri") {
                                 if (it) PrayerRefreshWork.refreshNow(context)
