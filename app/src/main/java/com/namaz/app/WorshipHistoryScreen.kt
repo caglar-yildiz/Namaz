@@ -18,12 +18,33 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.ZonedDateTime
+import java.time.ZoneId
 
 /** History and corrections for past days; no future-date editing. */
 @Composable
 fun WorshipHistoryScreen() {
     val context = LocalContext.current
-    val today = WorshipStore.today()
+    var today by remember { mutableStateOf(WorshipStore.today()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) today = WorshipStore.today()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(today) {
+        val now = ZonedDateTime.now(ZoneId.of("Europe/Istanbul"))
+        val nextDay = now.toLocalDate().plusDays(1).atStartOfDay(now.zone)
+        delay(Duration.between(now, nextDay).toMillis().coerceAtLeast(1000L) + 250L)
+        today = WorshipStore.today()
+    }
     var month by remember { mutableStateOf(YearMonth.from(today)) }
     var selected by remember { mutableStateOf(today) }
     var revision by remember { mutableIntStateOf(0) }
@@ -32,6 +53,10 @@ fun WorshipHistoryScreen() {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    LaunchedEffect(today) {
+        if (selected.isAfter(today)) selected = today
+        if (month.isAfter(YearMonth.from(today))) month = YearMonth.from(today)
     }
     val format = remember { DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("tr", "TR")) }
     val startOfWeek = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
@@ -76,23 +101,36 @@ fun WorshipHistoryScreen() {
             }
         }
         item { Text("Aylık kayıtlar (gün / tamamlanan namaz)", style = MaterialTheme.typography.titleMedium) }
-        item { Row(Modifier.fillMaxWidth()) { listOf("Pzt","Sal","Çar","Per","Cum","Cmt","Paz").forEach { label -> Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall) } } }
-        items(cells.chunked(7)) { days ->
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                days.forEach { date ->
-                    if (date == null) { Spacer(Modifier.width(58.dp)) } else {
-                    val completed = WorshipStore.prayers.count {
-                        WorshipStore.completed(context, date, it)
-                    }
-                    OutlinedButton(
-                        onClick = { selected = date },
-                        enabled = !date.isAfter(today),
-                        contentPadding = PaddingValues(2.dp),
-                        modifier = Modifier.width(58.dp)
-                    ) { Text("${date.dayOfMonth}\n$completed/5") }
+        item {
+            // Header and all calendar rows share one scroll position and identical cell widths.
+            Column(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("Pzt","Sal","Çar","Per","Cum","Cmt","Paz").forEach { label ->
+                        Text(label, modifier = Modifier.width(58.dp), style = MaterialTheme.typography.labelSmall)
                     }
                 }
-                repeat(7 - days.size) { Spacer(Modifier.weight(1f)) }
+                cells.chunked(7).forEach { days ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (days + List(7 - days.size) { null }).forEach { date ->
+                            if (date == null) {
+                                Spacer(Modifier.width(58.dp))
+                            } else {
+                                val completed = WorshipStore.prayers.count {
+                                    WorshipStore.completed(context, date, it)
+                                }
+                                OutlinedButton(
+                                    onClick = { selected = date },
+                                    enabled = !date.isAfter(today),
+                                    contentPadding = PaddingValues(2.dp),
+                                    modifier = Modifier.width(58.dp)
+                                ) { Text("${date.dayOfMonth}\\n$completed/5") }
+                            }
+                        }
+                    }
+                }
             }
         }
         item { Text("Bu hafta: $weeklyTotal / ${weekDates.size * 5} işaret")
