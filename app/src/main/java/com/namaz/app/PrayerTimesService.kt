@@ -49,12 +49,15 @@ object PrayerTimesService {
         }
     }
 
+    private fun requestId(date: LocalDate, index: Int): Int = 1000 + ((date.toEpochDay() % 100000).toInt() * 10) + index
+
     fun cancelAll(context: Context) {
         val manager = context.getSystemService(AlarmManager::class.java)
-        for (dayOffset in 0..1) for (index in 0 until names.size) {
+        val today = LocalDate.now(zone)
+        for (dayOffset in -1..2) for (index in 0 until names.size) {
             val intent = Intent(context, ReminderReceiver::class.java)
             val pending = PendingIntent.getBroadcast(
-                context, dayOffset * 10 + index + 1000, intent,
+                context, requestId(today.plusDays(dayOffset.toLong()), index), intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )
             if (pending != null) {
@@ -74,12 +77,13 @@ object PrayerTimesService {
         val fetched = if (category) (0..1).associateWith { offset ->
             fetch(today.plusDays(offset.toLong()), city)
         } else emptyMap()
-        // Cancel existing alarms for the same stable request IDs before rescheduling.
+        // Date-stable IDs prevent midnight collisions.
+        cancelAll(context)
         for (dayOffset in 0..1) {
             val date = today.plusDays(dayOffset.toLong())
             val times = fetched[dayOffset] ?: emptyMap()
             names.keys.forEachIndexed { index, name ->
-                val requestId = dayOffset * 10 + index + 1000
+                val requestId = requestId(date, index)
                 val intent = Intent(context, ReminderReceiver::class.java)
                     .putExtra("prayer", name)
                     .putExtra("date", date.toString())
