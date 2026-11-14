@@ -64,7 +64,7 @@ fun RemindersScreen() {
                             val count = withContext(Dispatchers.IO) {
                                 PrayerTimesService.scheduleNextDay(context, city.trim()).also {
                                     ReminderRefresh.saveCity(context, city)
-                                    ReminderRefresh.scheduleDaily(context)
+                                    PrayerRefreshWork.ensurePeriodic(context)
                                 }
                             }
                             "$count hatırlatma yaklaşık zamanlamayla planlandı (bugün ve yarın)."
@@ -103,7 +103,7 @@ fun RemindersScreen() {
                 Switch(checked = prayerCategoryEnabled, onCheckedChange = {
                     prayerCategoryEnabled = it
                     ReminderPreferences.setEnabled(context, "Namaz vakitleri", it)
-                    if (!it) PrayerTimesService.cancelAll(context) else ReminderRefresh.refreshAsync(context)
+                    if (!it) PrayerTimesService.cancelAll(context) else PrayerRefreshWork.refreshNow(context)
                 })
             }
         }
