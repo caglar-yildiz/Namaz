@@ -54,3 +54,11 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - 33, 99 ve 100 hedefleri; onaylı sıfırlama; SharedPreferences ile cihazda saklama.
 - Takip kayıtları otomatik olarak bildirim göndermez; ibadet takibi bildirim kategorisi henüz işlevsel değildir.
 - Eksikler: tarih geçmişi ve düzeltme, cihazlar arası yedekleme, veri dışa aktarma, gece yarısında açık ekranın yenilenmesi, erişilebilirlik ve cihaz/derleme testleri.
+
+## Namaz takip geçmişi
+
+- Haftalık görünümde Pazartesi–Pazar için işaretlenen namaz sayıları.
+- Aylık görünümde gün bazlı 0–5 işaret sayısı ve önceki aylara geçiş.
+- Geçmiş gün seçerek beş vakit kaydını düzeltme; gelecek günler düzenlenemez.
+- Son 30 günün toplam işaret sayısı; boş kayıtlar kılınmamış namaz olarak yorumlanmaz.
+- Eksikler: takvim haftası hizalaması (şu an yedişerli gün grupları), tarih değişiminde ekran yenileme, geçmişten dönüşte ana ekranın tazelenmesi, erişilebilirlik, derleme ve cihaz testleri.
