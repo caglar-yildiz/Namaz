@@ -69,6 +69,7 @@ class ReminderRefreshReceiver : BroadcastReceiver() {
             val pending = goAsync()
             try {
                 PrayerRefreshWork.refreshNow(context)
+                WorshipReminder.reconcile(context)
             } finally {
                 pending.finish()
             }
