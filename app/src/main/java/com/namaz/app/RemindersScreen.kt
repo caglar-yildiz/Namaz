@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.content.SharedPreferences
 
 private val prayerNames = listOf("İmsak", "Öğle", "İkindi", "Akşam", "Yatsı")
 private const val PREFS_NAME = "prayer_reminder_preferences"
@@ -23,6 +24,14 @@ private const val PREFS_NAME = "prayer_reminder_preferences"
 @Composable
 fun RemindersScreen() {
     val context = LocalContext.current
+    var preferencesRevision by remember { mutableIntStateOf(0) }
+    DisposableEffect(context) {
+        val prefsListenerStore = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> preferencesRevision++ }
+        prefsListenerStore.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefsListenerStore.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     val scope = rememberCoroutineScope()
     var city by remember { mutableStateOf(ReminderRefresh.city(context) ?: "Ankara") }
     var syncStatus by remember { mutableStateOf("") }
@@ -33,15 +42,13 @@ fun RemindersScreen() {
     val prefs = remember(context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
-    var prayerCategoryEnabled by remember { mutableStateOf(ReminderPreferences.enabled(context, "Namaz vakitleri")) }
-    val enabled = remember {
+    val prayerCategoryEnabled = remember(context, preferencesRevision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
+    val enabled = remember(context, preferencesRevision) {
         mutableStateMapOf<String, Boolean>().apply {
             prayerNames.forEach { name -> put(name, prefs.getBoolean(name, false)) }
         }
     }
-    var leadMinutes by remember {
-        mutableIntStateOf(prefs.getInt("lead_minutes", 0))
-    }
+    val leadMinutes = remember(context, preferencesRevision) { prefs.getInt("lead_minutes", 0) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -101,7 +108,6 @@ fun RemindersScreen() {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Namaz vakti bildirimleri", modifier = Modifier.weight(1f))
                 Switch(checked = prayerCategoryEnabled, onCheckedChange = {
-                    prayerCategoryEnabled = it
                     ReminderPreferences.setEnabled(context, "Namaz vakitleri", it)
                     if (!it) PrayerTimesService.cancelAll(context) else PrayerRefreshWork.refreshNow(context)
                 })
@@ -121,7 +127,7 @@ fun RemindersScreen() {
                         onCheckedChange = { value ->
                             enabled[name] = value
                             prefs.edit().putBoolean(name, value).apply()
-                            ReminderRefresh.refreshAsync(context)
+                            PrayerRefreshWork.refreshNow(context)
                         }
                     )
                 }
@@ -135,7 +141,6 @@ fun RemindersScreen() {
                     RadioButton(
                         selected = leadMinutes == minutes,
                         onClick = {
-                            leadMinutes = minutes
                             prefs.edit().putInt("lead_minutes", minutes).apply()
                             ReminderRefresh.refreshAsync(context)
                         }
