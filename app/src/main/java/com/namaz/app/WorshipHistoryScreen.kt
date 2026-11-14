@@ -28,6 +28,11 @@ fun WorshipHistoryScreen() {
     val startOfWeek = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
     val week = (0..6).map { startOfWeek.plusDays(it.toLong()) }
     val monthDays = (1..month.lengthOfMonth()).map { month.atDay(it) }
+    val cells: List<LocalDate?> = List(month.atDay(1).dayOfWeek.value - 1) { null } + monthDays
+    val weekDates = week.filter { !it.isAfter(today) }
+    val monthDates = monthDays.filter { !it.isAfter(today) }
+    val weeklyTotal = weekDates.sumOf { day -> WorshipStore.prayers.count { WorshipStore.completed(context, day, it) } }
+    val monthlyTotal = monthDates.sumOf { day -> WorshipStore.prayers.count { WorshipStore.completed(context, day, it) } }
 
     LazyColumn(contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -60,9 +65,10 @@ fun WorshipHistoryScreen() {
             }
         }
         item { Text("Aylık kayıtlar (gün / tamamlanan namaz)", style = MaterialTheme.typography.titleMedium) }
-        items(monthDays.chunked(7)) { days ->
+        items(cells.chunked(7)) { days ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 days.forEach { date ->
+                    if (date == null) { Spacer(Modifier.weight(1f)) } else {
                     val completed = WorshipStore.prayers.count {
                         WorshipStore.completed(context, date, it)
                     }
@@ -72,9 +78,14 @@ fun WorshipHistoryScreen() {
                         contentPadding = PaddingValues(2.dp),
                         modifier = Modifier.weight(1f)
                     ) { Text("${date.dayOfMonth}\n$completed/5") }
+                    }
                 }
                 repeat(7 - days.size) { Spacer(Modifier.weight(1f)) }
             }
+        }
+        item { Text("Bu hafta: $weeklyTotal / ${weekDates.size * 5} işaret")
+            Text("Seçilen ay: $monthlyTotal / ${monthDates.size * 5} işaret")
+            Text("İşaretlenmeyen kayıtlar kılınmadı anlamına gelmez.", style = MaterialTheme.typography.bodySmall)
         }
         item { HorizontalDivider() }
         item { Text("Seçilen gün: ${selected.format(format)}", style = MaterialTheme.typography.titleMedium) }
