@@ -20,7 +20,10 @@ Türkiye odaklı Kotlin / Jetpack Compose Android namaz vakitleri ve dini günle
 - [ ] Hatırlatıcılar: doğrulanmış vakit verisiyle gerçek zamanlama ve iptal/yeniden planlama
 - [ ] Bildirim sesi: 'hafif kısa ton' için özgün kısa ses dosyası; şu an sistem varsayılan sesine eşleniyor
 - [ ] Ayarlar ve Hatırlatıcılar sekmeleri arasında anlık tercih senkronizasyonu ve gerçek kategori bazlı gönderim
-- [ ] Hatırlatıcılar: yeniden başlatma, saat dilimi değişimi, pil optimizasyonu ve kesin alarm izni senaryolarını test et
+- [x] Hatırlatıcılar: günlük yaklaşık yenileme, tercih değişiminde yeniden planlama, BOOT_COMPLETED / saat değişimi receiver kodları eklendi (test edilmedi)
+- [ ] Hatırlatıcılar: reboot receiver için güvenilir arka plan yürütmesi (goAsync/WorkManager), cihaz testi, pil optimizasyonu ve kesin alarm gereksinimleri
+- [ ] Hatırlatıcılar: gün değişiminde sabit alarm kimliklerinin kaydırılması, gece yarısı ve ağ hatası senaryoları
+- [ ] Hatırlatıcılar: iki ekranda tercihlerin anlık senkronizasyonu
 - [ ] İbadet: zikirmatik ve günlük namaz takip ekranları
 - [ ] Ana Sayfa: diğer sekmelerden özet kartlar ve namaz vakitleri
 - [ ] Widget ve erişilebilirlik / küçük ekran kontrolleri
