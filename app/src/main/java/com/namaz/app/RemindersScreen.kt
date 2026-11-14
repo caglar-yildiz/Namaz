@@ -1,6 +1,10 @@
 package com.namaz.app
 
 import android.Manifest
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +23,9 @@ private const val PREFS_NAME = "prayer_reminder_preferences"
 @Composable
 fun RemindersScreen() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var city by remember { mutableStateOf("Ankara") }
+    var syncStatus by remember { mutableStateOf("") }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -42,6 +49,32 @@ fun RemindersScreen() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineMedium) }
+        item {
+            OutlinedTextField(value = city, onValueChange = { city = it },
+                label = { Text("Şehir (pilot)") }, singleLine = true)
+            Button(onClick = {
+                if (!ReminderNotifications.canNotify(context)) {
+                    syncStatus = "Önce bildirim iznini etkinleştirin."
+                    if (Build.VERSION.SDK_INT >= 33)
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    scope.launch {
+                        syncStatus = "Vakitler alınıyor..."
+                        syncStatus = try {
+                            val count = withContext(Dispatchers.IO) {
+                                PrayerTimesService.scheduleNextDay(context, city.trim())
+                            }
+                            "$count hatırlatma yaklaşık zamanlamayla planlandı (bugün ve yarın)."
+                        } catch (e: Exception) {
+                            "Vakitler alınamadı; bağlantı ve şehir adını kontrol edin."
+                        }
+                    }
+                }
+            }) { Text("Namaz bildirimlerini planla") }
+            Text(syncStatus)
+            Text("Pilot kaynak AlAdhan; resmî Diyanet vakitleriyle eşitliği garanti edilmez.",
+                style = MaterialTheme.typography.bodySmall)
+        }
         item {
             Button(onClick = {
                 if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
