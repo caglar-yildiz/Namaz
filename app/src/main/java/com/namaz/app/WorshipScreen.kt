@@ -14,6 +14,14 @@ import java.util.Locale
 @Composable
 fun WorshipScreen() {
     val context = LocalContext.current
+    var showHistory by remember { mutableStateOf(false) }
+    if (showHistory) {
+        Column {
+            TextButton(onClick = { showHistory = false }) { Text("← İbadet ekranına dön") }
+            WorshipHistoryScreen()
+        }
+        return
+    }
     val date = WorshipStore.today()
     val checked = remember(date) {
         mutableStateMapOf<String, Boolean>().apply {
@@ -39,6 +47,7 @@ fun WorshipScreen() {
                 style = MaterialTheme.typography.titleMedium)
         }
         item { Text("Günlük namaz takibi", style = MaterialTheme.typography.titleLarge) }
+        item { OutlinedButton(onClick = { showHistory = true }) { Text("Haftalık ve aylık geçmiş") } }
         item {
             LinearProgressIndicator(
                 progress = { completedCount / 5f },
