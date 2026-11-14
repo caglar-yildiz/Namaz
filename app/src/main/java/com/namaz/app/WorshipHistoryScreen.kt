@@ -1,6 +1,8 @@
 package com.namaz.app
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,7 +50,7 @@ fun WorshipHistoryScreen() {
         item { Text("Namaz geçmişi", style = MaterialTheme.typography.titleLarge) }
         item { Text("Bu hafta", style = MaterialTheme.typography.titleMedium) }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 week.forEach { date ->
                     val completed = WorshipStore.prayers.count {
                         WorshipStore.completed(context, date, it)
@@ -58,7 +60,7 @@ fun WorshipHistoryScreen() {
                         enabled = !date.isAfter(today),
                         onClick = { selected = date },
                         label = { Text("${date.dayOfMonth}\n$completed/5") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.width(58.dp)
                     )
                 }
             }
@@ -78,7 +80,7 @@ fun WorshipHistoryScreen() {
         items(cells.chunked(7)) { days ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 days.forEach { date ->
-                    if (date == null) { Spacer(Modifier.weight(1f)) } else {
+                    if (date == null) { Spacer(Modifier.width(58.dp)) } else {
                     val completed = WorshipStore.prayers.count {
                         WorshipStore.completed(context, date, it)
                     }
@@ -86,7 +88,7 @@ fun WorshipHistoryScreen() {
                         onClick = { selected = date },
                         enabled = !date.isAfter(today),
                         contentPadding = PaddingValues(2.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.width(58.dp)
                     ) { Text("${date.dayOfMonth}\n$completed/5") }
                     }
                 }
