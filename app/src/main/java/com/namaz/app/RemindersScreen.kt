@@ -1,5 +1,9 @@
 package com.namaz.app
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +19,10 @@ private const val PREFS_NAME = "prayer_reminder_preferences"
 @Composable
 fun RemindersScreen() {
     val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    var testStatus by remember { mutableStateOf("") }
     val prefs = remember(context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -34,6 +42,18 @@ fun RemindersScreen() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineMedium) }
+        item {
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    testStatus = "Bildirim izni istendi. İzin verdikten sonra test düğmesine tekrar basın."
+                } else {
+                    ReminderNotifications.scheduleTest(context)
+                    testStatus = "Yaklaşık bir dakika içinde test bildirimi planlandı."
+                }
+            }) { Text("Test bildirimi planla") }
+            if (testStatus.isNotEmpty()) Text(testStatus)
+        }
         item {
             Text(
                 "Namaz vakitleri için bildirim tercihlerini belirleyin. " +
@@ -90,8 +110,8 @@ fun RemindersScreen() {
         }
         item {
             Text(
-                "Not: Bu ekranda yalnızca tercihler kaydedilir; henüz alarm veya " +
-                    "bildirim planlanmaz.",
+                "Not: Namaz vakti verisi henüz bağlı değil; gerçek vakitler için alarm veya " +
+                    "bildirim planlanmaz. Test bildirimi gerçek namaz vakti değildir.",
                 style = MaterialTheme.typography.bodySmall
             )
         }
