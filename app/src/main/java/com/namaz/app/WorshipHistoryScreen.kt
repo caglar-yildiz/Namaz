@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.content.SharedPreferences
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -24,6 +25,12 @@ fun WorshipHistoryScreen() {
     var month by remember { mutableStateOf(YearMonth.from(today)) }
     var selected by remember { mutableStateOf(today) }
     var revision by remember { mutableIntStateOf(0) }
+    DisposableEffect(context) {
+        val prefs = context.getSharedPreferences("worship_journal_v1", android.content.Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     val format = remember { DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("tr", "TR")) }
     val startOfWeek = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
     val week = (0..6).map { startOfWeek.plusDays(it.toLong()) }
