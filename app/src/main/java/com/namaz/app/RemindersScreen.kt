@@ -24,7 +24,7 @@ private const val PREFS_NAME = "prayer_reminder_preferences"
 fun RemindersScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var city by remember { mutableStateOf("Ankara") }
+    var city by remember { mutableStateOf(ReminderRefresh.city(context) ?: "Ankara") }
     var syncStatus by remember { mutableStateOf("") }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -62,7 +62,10 @@ fun RemindersScreen() {
                         syncStatus = "Vakitler alınıyor..."
                         syncStatus = try {
                             val count = withContext(Dispatchers.IO) {
-                                PrayerTimesService.scheduleNextDay(context, city.trim())
+                                PrayerTimesService.scheduleNextDay(context, city.trim()).also {
+                                    ReminderRefresh.saveCity(context, city)
+                                    ReminderRefresh.scheduleDaily(context)
+                                }
                             }
                             "$count hatırlatma yaklaşık zamanlamayla planlandı (bugün ve yarın)."
                         } catch (e: Exception) {
@@ -100,6 +103,7 @@ fun RemindersScreen() {
                 Switch(checked = prayerCategoryEnabled, onCheckedChange = {
                     prayerCategoryEnabled = it
                     ReminderPreferences.setEnabled(context, "Namaz vakitleri", it)
+                    if (!it) PrayerTimesService.cancelAll(context) else ReminderRefresh.refreshAsync(context)
                 })
             }
         }
@@ -117,6 +121,7 @@ fun RemindersScreen() {
                         onCheckedChange = { value ->
                             enabled[name] = value
                             prefs.edit().putBoolean(name, value).apply()
+                            ReminderRefresh.refreshAsync(context)
                         }
                     )
                 }
@@ -132,6 +137,7 @@ fun RemindersScreen() {
                         onClick = {
                             leadMinutes = minutes
                             prefs.edit().putInt("lead_minutes", minutes).apply()
+                            ReminderRefresh.refreshAsync(context)
                         }
                     )
                     Text(
@@ -143,8 +149,8 @@ fun RemindersScreen() {
         }
         item {
             Text(
-                "Not: Namaz vakti verisi henüz bağlı değil; gerçek vakitler için alarm veya " +
-                    "bildirim planlanmaz. Test bildirimi gerçek namaz vakti değildir.",
+                "Not: Pilot vakit verisi resmî Diyanet saatleriyle doğrulanmadı; " +
+                    "bildirimler yaklaşık zamanlanır. Test bildirimi gerçek namaz vakti değildir.",
                 style = MaterialTheme.typography.bodySmall
             )
         }
