@@ -18,9 +18,16 @@ import java.util.Locale
 
 data class ReligiousDay(val date: LocalDate, val name: String, val description: String)
 
-// Dates must be verified against Diyanet before being populated for production.
+// Source: https://diyanet.gov.tr/dini-gun-geceler (2026 calendar)
+// Only individually verified dates are included. 2027 entries are pending verification.
 object ReligiousDaysData {
-    val days: List<ReligiousDay> = emptyList()
+    val days: List<ReligiousDay> = listOf(
+        ReligiousDay(
+            LocalDate.of(2026, 12, 10),
+            "Üç Ayların Başlangıcı ve Regaib Kandili",
+            "Diyanet İşleri Başkanlığı 2026 dini günler takvimine göre."
+        )
+    )
 }
 
 @Composable
