@@ -51,7 +51,7 @@ object PrayerTimesService {
 
     fun cancelAll(context: Context) {
         val manager = context.getSystemService(AlarmManager::class.java)
-        for (dayOffset in 0..1) for (index in names.keys.indices) {
+        for (dayOffset in 0..1) for (index in 0 until names.size) {
             val intent = Intent(context, ReminderReceiver::class.java)
             val pending = PendingIntent.getBroadcast(
                 context, dayOffset * 10 + index + 1000, intent,
