@@ -42,7 +42,7 @@ fun NamazApp() {
             when (current) {
                 Tab.HOME -> NamazHome()
                 Tab.DAYS -> ReligiousDaysScreen()
-                Tab.REMINDERS -> Placeholder("Hatırlatıcılar")
+                Tab.REMINDERS -> RemindersScreen()
                 Tab.WORSHIP -> Placeholder("İbadet")
             }
         }
