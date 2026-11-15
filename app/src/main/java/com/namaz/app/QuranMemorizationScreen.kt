@@ -60,7 +60,7 @@ private fun audioUrl(surah: Int, verse: Int): String =
 
 private fun surahVerseGlobalNumber(surah: Int, verse: Int): Int {
     // Verse offsets for the ten supported surahs, from standard 6236-verse numbering.
-    val starts = mapOf(1 to 1, 103 to 6178, 105 to 6187, 107 to 6199,
+    val starts = mapOf(1 to 1, 103 to 6178, 105 to 6190, 107 to 6199,
         108 to 6206, 109 to 6209, 110 to 6215, 112 to 6222, 113 to 6226, 114 to 6231)
     return (starts[surah] ?: 1) + verse - 1
 }
