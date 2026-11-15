@@ -38,12 +38,17 @@ fun WorshipScreen() {
         currentDay = WorshipStore.today()
     }
     var showHistory by remember { mutableStateOf(false) }
+    var showMemorization by remember { mutableStateOf(false) }
     var revision by remember { mutableIntStateOf(0) }
     DisposableEffect(context) {
         val prefs = context.getSharedPreferences("worship_journal_v1", android.content.Context.MODE_PRIVATE)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    if (showMemorization) {
+        QuranMemorizationScreen(onBack = { showMemorization = false })
+        return
     }
     if (showHistory) {
         Column {
@@ -75,6 +80,24 @@ fun WorshipScreen() {
         item {
             Text(date.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("tr", "TR"))),
                 style = MaterialTheme.typography.titleMedium)
+        }
+        item {
+            Card(
+                onClick = { showMemorization = true },
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF103E36)),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("☾  KUR'AN EZBERİ", color = androidx.compose.ui.graphics.Color(0xFFD7B56D),
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    Text("Ezber Asistanım", color = androidx.compose.ui.graphics.Color.White,
+                        style = MaterialTheme.typography.headlineSmall)
+                    Text("10 kısa sure • Ayet bazlı dinleme • Akıllı tekrar",
+                        color = androidx.compose.ui.graphics.Color(0xFFE5EFE9))
+                    Button(onClick = { showMemorization = true }) { Text("Ezbere başla") }
+                }
+            }
         }
         item { Text("Günlük namaz takibi", style = MaterialTheme.typography.titleLarge) }
         item { OutlinedButton(onClick = { showHistory = true }) { Text("Haftalık ve aylık geçmiş") } }
