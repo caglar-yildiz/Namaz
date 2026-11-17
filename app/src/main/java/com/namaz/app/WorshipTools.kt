@@ -3,6 +3,7 @@ package com.namaz.app
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import android.media.AudioManager
 import android.media.ToneGenerator
@@ -19,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -31,6 +36,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -48,13 +56,24 @@ internal fun DhikrScreen(onBack: () -> Unit) {
     val target = remember(revision) { WorshipStore.target(context) }
     val fraction = (count.toFloat() / target).coerceIn(0f, 1f)
     val progress by animateFloatAsState(fraction, tween(220), label = "dhikr-progress")
-    val bead by animateFloatAsState(count.toFloat(), tween(180), label = "dhikr-bead")
+    val beadPosition = remember { Animatable(count.toFloat()) }
+    LaunchedEffect(count) {
+        // Small steps slide bead by bead; large jumps (reset, phrase change) snap instantly.
+        if (abs(count - beadPosition.value) > 3f) beadPosition.snapTo(count.toFloat())
+        else beadPosition.animateTo(count.toFloat(), spring(dampingRatio = 0.72f, stiffness = 320f))
+    }
+    val swing = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     val tone = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 35) }
     DisposableEffect(tone) { onDispose { tone.release() } }
     fun advance() {
         WorshipStore.increment(context, selected)
         tone.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
         if (vibrate) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        scope.launch {
+            swing.animateTo(3.5f, tween(90))
+            swing.animateTo(0f, spring(dampingRatio = 0.28f, stiffness = 120f))
+        }
     }
     val green = MaterialTheme.colorScheme.primary
     val gold = MaterialTheme.colorScheme.secondary
@@ -64,9 +83,9 @@ internal fun DhikrScreen(onBack: () -> Unit) {
         item { InnerHeader("Zikirmatik", onBack) }
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Tesbihe dokun veya bir tane çek", style = MaterialTheme.typography.bodySmall)
+                Text("Tespihe dokun ya da bir taneyi aşağı çek", style = MaterialTheme.typography.bodySmall)
                 Box(
-                    Modifier.size(250.dp)
+                    Modifier.size(width = 280.dp, height = 360.dp)
                         .pointerInput(selected) { detectTapGestures { advance() } }
                         .pointerInput(selected) {
                             var consumed = false
@@ -84,27 +103,13 @@ internal fun DhikrScreen(onBack: () -> Unit) {
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(Modifier.fillMaxSize()) {
-                        val radius = size.minDimension / 2 - 21.dp.toPx()
-                        val beadCount = 33
-                        // Rotate the entire strand as a single rigid piece: one gesture = one bead.
-                        rotate(360f * bead / beadCount) {
-                            for (point in 0 until beadCount) {
-                                val angle = point * 2 * PI / beadCount - PI / 2
-                                val position = center + Offset(
-                                    cos(angle).toFloat() * radius,
-                                    sin(angle).toFloat() * radius
-                                )
-                                drawCircle(track, 10.dp.toPx(), position)
-                                drawCircle(if (point == 0) gold else green, 7.5.dp.toPx(), position)
-                                drawCircle(gold.copy(alpha = 0.28f), 2.dp.toPx(),
-                                    position + Offset(-2.dp.toPx(), -2.dp.toPx()))
-                            }
-                        }
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    TespihCanvas(beadPosition.value, swing.value, Modifier.fillMaxSize())
+                    Column(
+                        Modifier.align(Alignment.TopCenter).padding(top = 92.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text("$count", style = MaterialTheme.typography.displayMedium)
-                        Text("Hedef: $target")
+                        Text("Hedef: $target", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Text(selected, style = MaterialTheme.typography.titleMedium)
@@ -144,6 +149,137 @@ internal fun DhikrScreen(onBack: () -> Unit) {
         text = { Text("Bugünkü $selected sayısı sıfırlanır.") },
         confirmButton = { TextButton(onClick = { WorshipStore.reset(context, selected); reset = false }) { Text("Sıfırla") } },
         dismissButton = { TextButton(onClick = { reset = false }) { Text("Vazgeç") } })
+}
+
+private const val TESPIH_BEADS = 33
+private val beadLight = Color(0xFFF6D08A)
+private val beadBase = Color(0xFFC7802B)
+private val beadDark = Color(0xFF6E3B10)
+private val cordColor = Color(0xFF8A5A2B)
+private val tasselColor = Color(0xFFB8862F)
+
+/**
+ * Draws a hanging 33-bead tespih. The cord forms a teardrop loop that ends at the imame.
+ * Beads that are not yet counted rest on the left side; each count slides one bead across
+ * the free part of the cord to the right side. Rounds alternate direction, so the beads
+ * never jump back when a round of 33 is completed.
+ */
+@Composable
+private fun TespihCanvas(position: Float, swingDegrees: Float, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val top = 14.dp.toPx()
+        val loopHeight = 228.dp.toPx()
+        val halfWidth = 112.dp.toPx()
+        val cx = size.width / 2
+        rotate(swingDegrees, pivot = Offset(cx, top)) {
+            // Sample the loop: s=0 is the bottom knot, travelling up the left side, over the top
+            // and down the right side back to the knot.
+            val samples = 360
+            val points = Array(samples + 1) { i ->
+                val theta = 2 * PI * i / samples
+                val widen = 1 - 0.38 * cos(theta)
+                Offset(
+                    (cx - halfWidth * sin(theta) * widen / 1.18).toFloat(),
+                    (top + loopHeight * (1 + cos(theta)) / 2).toFloat()
+                )
+            }
+            val lengths = FloatArray(samples + 1)
+            for (i in 1..samples) {
+                lengths[i] = lengths[i - 1] + hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y)
+            }
+            val total = lengths[samples]
+            fun pointAt(distance: Float): Offset {
+                val d = distance.coerceIn(0f, total)
+                var lo = 0
+                var hi = samples
+                while (hi - lo > 1) {
+                    val mid = (lo + hi) / 2
+                    if (lengths[mid] < d) lo = mid else hi = mid
+                }
+                val span = (lengths[hi] - lengths[lo]).coerceAtLeast(0.0001f)
+                val t = (d - lengths[lo]) / span
+                return points[lo] + (points[hi] - points[lo]) * t
+            }
+
+            val cord = Path().apply {
+                moveTo(points[0].x, points[0].y)
+                for (i in 1..samples) lineTo(points[i].x, points[i].y)
+            }
+            drawPath(cord, cordColor, style = Stroke(1.6.dp.toPx()))
+
+            val spacing = total / (TESPIH_BEADS + 4.6f)
+            val margin = spacing * 0.6f
+            val beadRadius = spacing * 0.47f
+            val round = floor(position / TESPIH_BEADS)
+            val within = position - round * TESPIH_BEADS
+            val moved = if (round.toInt() % 2 == 0) within else TESPIH_BEADS - within
+            for (bead in 0 until TESPIH_BEADS) {
+                val restLeft = margin + bead * spacing
+                val restRight = total - margin - (TESPIH_BEADS - 1 - bead) * spacing
+                val t = (moved - (TESPIH_BEADS - 1 - bead)).coerceIn(0f, 1f)
+                val eased = t * t * (3 - 2 * t)
+                val center = pointAt(restLeft + (restRight - restLeft) * eased)
+                val lift = 1f + 0.14f * sin(PI * t).toFloat()
+                drawBead(center, beadRadius * lift)
+            }
+
+            // Knot, small bead, imame and tassel below the loop.
+            val knot = points[0]
+            val smallBead = knot + Offset(0f, 9.dp.toPx())
+            drawLine(cordColor, knot, smallBead, 1.6.dp.toPx())
+            drawBead(smallBead, 5.dp.toPx())
+            val imameTop = smallBead.y + 4.dp.toPx()
+            val imameWidth = 17.dp.toPx()
+            val imameHeight = 36.dp.toPx()
+            drawOval(
+                Brush.linearGradient(
+                    listOf(beadLight, beadBase, beadDark),
+                    start = Offset(cx - imameWidth / 2, imameTop),
+                    end = Offset(cx + imameWidth / 2, imameTop + imameHeight)
+                ),
+                topLeft = Offset(cx - imameWidth / 2, imameTop),
+                size = Size(imameWidth, imameHeight)
+            )
+            drawOval(
+                beadLight.copy(alpha = 0.55f),
+                topLeft = Offset(cx - imameWidth * 0.28f, imameTop + imameHeight * 0.12f),
+                size = Size(imameWidth * 0.18f, imameHeight * 0.4f)
+            )
+            val capTop = imameTop + imameHeight - 2.dp.toPx()
+            drawRoundRect(
+                tasselColor,
+                topLeft = Offset(cx - 5.dp.toPx(), capTop),
+                size = Size(10.dp.toPx(), 7.dp.toPx()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+            )
+            val tasselStart = Offset(cx, capTop + 6.dp.toPx())
+            val tasselLength = 44.dp.toPx()
+            for (strand in -5..5) {
+                val spread = strand * 2.4.dp.toPx()
+                drawLine(
+                    if (strand % 2 == 0) tasselColor else beadBase,
+                    tasselStart + Offset(spread * 0.25f, 0f),
+                    tasselStart + Offset(spread, tasselLength - abs(strand) * 1.2.dp.toPx()),
+                    1.3.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawBead(center: Offset, radius: Float) {
+    drawCircle(Color.Black.copy(alpha = 0.18f), radius, center + Offset(radius * 0.18f, radius * 0.25f))
+    drawCircle(
+        Brush.radialGradient(
+            listOf(beadLight, beadBase, beadDark),
+            center = center + Offset(-radius * 0.35f, -radius * 0.35f),
+            radius = radius * 1.5f
+        ),
+        radius,
+        center
+    )
+    drawCircle(Color.White.copy(alpha = 0.45f), radius * 0.22f, center + Offset(-radius * 0.38f, -radius * 0.4f))
 }
 
 private val kindnessIdeas = listOf(
