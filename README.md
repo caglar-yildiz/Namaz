@@ -116,4 +116,4 @@ Hedef: Uygulamanın yaşlı kullanıcılar tarafından da kolayca kullanılabilm
 - **Sesli komut (yapay zekâ yok):** Android’in konuşma tanıma ekranı sesi metne çevirir; `VoiceCommands.kt` metindeki anahtar kelimelere bakar. Desteklenenler: “namaza ne kadar kaldı”, “öğle/ikindi/… ne zaman”, “namazımı kıldım”, “tespih”, “dua”, “vakitleri oku”, “bugün günlerden ne”, “yardım”.
 - Sesli okuma için telefonda Türkçe TTS (ör. Google konuşma hizmetleri) yüklü olmalı; sesli komut için Google uygulaması gerekir.
 
-Bilinen eksikler: derleme ve cihaz testi yapılmadı; vakit bildiriminin kendisi henüz sesli okunmuyor; sade modda yazı boyutu sistem yazı boyutu ile birlikte büyür, çok büyük ayarda yerleşim kontrol edilmeli.
+Derleme: `:app:assembleDebug` 17 Kasım 2026’da başarıyla derlendi (Kotlin uyarısı yok). Bilinen eksikler: cihaz testi yapılmadı; vakit bildiriminin kendisi henüz sesli okunmuyor; sade modda yazı boyutu sistem yazı boyutu ile birlikte büyür, çok büyük ayarda yerleşim kontrol edilmeli.
