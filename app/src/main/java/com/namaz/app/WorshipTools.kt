@@ -165,7 +165,7 @@ private val tasselColor = Color(0xFFB8862F)
  * never jump back when a round of 33 is completed.
  */
 @Composable
-private fun TespihCanvas(position: Float, swingDegrees: Float, modifier: Modifier = Modifier) {
+internal fun TespihCanvas(position: Float, swingDegrees: Float, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val top = 14.dp.toPx()
         val loopHeight = 228.dp.toPx()

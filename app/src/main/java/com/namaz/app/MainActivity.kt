@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         RoutineAlarm.refresh(this, replace = false)
         if (savedInstanceState == null) readDestination(intent)
-        setContent { NamazTheme { NamazApp(opening) { opening = null } } }
+        setContent { NamazTheme { NamazRoot(opening) { opening = null } } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -58,6 +58,20 @@ private enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Ana Sayfa", Icons.Filled.Home), DAYS("Dini Günler", Icons.Filled.DateRange),
     REMINDERS("Hatırlatıcı", Icons.Filled.Notifications), WORSHIP("İbadet", Icons.Filled.Favorite),
     SETTINGS("Ayarlar", Icons.Filled.Settings)
+}
+
+/** Chooses between the first-run introduction, the simple mode and the full app. */
+@Composable
+private fun NamazRoot(opening: String?, consumeOpening: () -> Unit) {
+    val context = LocalContext.current
+    val revision = preferenceRevision(AppMode.STORE)
+    val onboarded = remember(revision) { AppMode.onboarded(context) }
+    val easy = remember(revision) { AppMode.easy(context) }
+    when {
+        !onboarded -> OnboardingScreen()
+        easy -> EasyApp(opening, consumeOpening)
+        else -> NamazApp(opening, consumeOpening)
+    }
 }
 
 @Composable

@@ -20,6 +20,13 @@ internal fun SettingsScreen(onReminders: () -> Unit) {
     val selectedSound = remember(revision) { ReminderPreferences.sound(context) }
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle("Ayarlar") }
+        item { SectionTitle("Kullanım") }
+        item { DashboardCard("Sade kullanıma geç", "Büyük düğmeler, sesli vakit ve sesli komut. Yaşlılar için önerilir.", "◎") {
+            AppMode.setEasy(context, true)
+        } }
+        item { DashboardCard("Tanıtımı tekrar izle", "Uygulamanın kısa sesli tanıtımı", "▷") {
+            AppMode.setOnboarded(context, false)
+        } }
         item { SectionTitle("Bildirim sesi") }
         listOf("silent" to "Sessiz", "soft" to "Hafif kısa ton", "default" to "Standart ses", "vibrate" to "Titreşim").forEach { (key, label) ->
             item {

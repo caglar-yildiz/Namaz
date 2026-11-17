@@ -103,3 +103,17 @@ Bu değişiklikler kod seviyesindedir; APK veya başarılı build iddiası deği
 - İç ekran başlıkları geri ikonu + başlık satırı oldu; sekme ve bölüm başlıkları ortak bileşenlerle tutarlı hâle geldi.
 - Ana Sayfa'da sıradaki vakit vurgulanıyor, geçmiş vakitler soluk gösteriliyor.
 - Derleme ve cihaz testi yapılmadı.
+
+## Sade kullanım, sesli yardım ve tanıtım (`feature/easy-mode`)
+
+Hedef: Uygulamanın yaşlı kullanıcılar tarafından da kolayca kullanılabilmesi. Yeni özellik eklemek yerine mevcut özellikler sade bir yüzle sunuluyor.
+
+- **İlk açılış tanıtımı (5 adım, sesli):** hoş geldin → kullanım şekli (Sade / Tüm özellikler) → şehir → vakit bildirimi izni → kısa tur. Her adım sesli okunur; ses kapatılabilir. Ayarlar’dan veya sade ekrandaki “Nasıl kullanılır?” penceresinden tekrar izlenebilir. Güncelleme sonrası mevcut kullanıcılar da tanıtımı bir kez görür.
+- **Sade kullanım ekranı:** sıradaki vakit çok büyük yazıyla; dokununca sesli okunur. Açılışta vakti otomatik söyler (kapatılabilir). Altında 80dp yüksekliğinde büyük düğmeler: Konuşarak sor, Bugünün vakitleri, Tespih çek, Dua dinle, Namazımı kıldım. Alt menü ve ayrıntılı ayarlar gizli; “Tüm özellikler” onay ister.
+- **Sesli tespih:** her 33’te ve hedefe ulaşınca sesli bildirir; “Sayıyı söyle” düğmesi var.
+- **Dua dinle:** her dua büyük kartta, Türkçe anlamı sesli okunur.
+- **Namazımı kıldım:** girmiş olan son vakti kaydeder, sesli onaylar, “geri al” sunar.
+- **Sesli komut (yapay zekâ yok):** Android’in konuşma tanıma ekranı sesi metne çevirir; `VoiceCommands.kt` metindeki anahtar kelimelere bakar. Desteklenenler: “namaza ne kadar kaldı”, “öğle/ikindi/… ne zaman”, “namazımı kıldım”, “tespih”, “dua”, “vakitleri oku”, “bugün günlerden ne”, “yardım”.
+- Sesli okuma için telefonda Türkçe TTS (ör. Google konuşma hizmetleri) yüklü olmalı; sesli komut için Google uygulaması gerekir.
+
+Bilinen eksikler: derleme ve cihaz testi yapılmadı; vakit bildiriminin kendisi henüz sesli okunmuyor; sade modda yazı boyutu sistem yazı boyutu ile birlikte büyür, çok büyük ayarda yerleşim kontrol edilmeli.
