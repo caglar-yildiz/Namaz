@@ -1,7 +1,7 @@
 name: Android debug APK
 on:
   push:
-    branches: [main, feature/religious-days, 'fix/**']
+    branches: [main, 'feature/**', 'fix/**']
   workflow_dispatch:
 jobs:
   build:
