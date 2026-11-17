@@ -49,7 +49,7 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
     val dayLead = remember(revision) { ReligiousDayReminders.leadDays(context) }
 
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineLarge) }
+        item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Namaz vakitleri", "Dini günler", "Kişisel rutinler").forEach { title ->
@@ -63,9 +63,8 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
         when (group) {
             "Namaz vakitleri" -> {
                 item {
-                    OutlinedTextField(city, { city = it.take(60); syncStatus = "" }, Modifier.fillMaxWidth(),
-                        enabled = !savingCity, label = { Text("Şehir") }, singleLine = true)
-                    Button(enabled = city.isNotBlank() && !savingCity, onClick = {
+                    CityPicker(city, !savingCity) { city = it; syncStatus = "" }
+                    Button(enabled = city in TurkishCities.all && !savingCity, onClick = {
                         val chosen = city.trim()
                         savingCity = true
                         scope.launch {

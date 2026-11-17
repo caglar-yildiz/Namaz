@@ -2,6 +2,8 @@ package com.namaz.app
 
 import android.content.Intent
 import android.net.Uri
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -92,6 +94,28 @@ internal fun DuaDetail(id: String, onBack: () -> Unit, onRoutine: (Routine) -> U
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("dua_favorites", 0) }
     var favorite by rememberSaveable(id) { mutableStateOf(prefs.getBoolean(id, false)) }
+    var ttsReady by remember { mutableStateOf(false) }
+    var ttsSupported by remember { mutableStateOf(false) }
+    var speech by remember { mutableStateOf<TextToSpeech?>(null) }
+    DisposableEffect(context, id) {
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val support = engine?.setLanguage(Locale.forLanguageTag("ar"))
+                ttsSupported = support != TextToSpeech.LANG_MISSING_DATA && support != TextToSpeech.LANG_NOT_SUPPORTED && support != null
+                ttsReady = true
+            } else {
+                ttsReady = true
+                ttsSupported = false
+            }
+        }
+        speech = engine
+        onDispose {
+            engine?.stop()
+            engine?.shutdown()
+            speech = null
+        }
+    }
     val revision = preferenceRevision(RoutineStore.NAME)
     val existing = remember(id, revision) {
         RoutineStore.all(context).firstOrNull { it.prayerId == id && it.archivedOn == null }
@@ -103,6 +127,15 @@ internal fun DuaDetail(id: String, onBack: () -> Unit, onRoutine: (Routine) -> U
                 Text(dua.arabic, Modifier.fillMaxWidth().padding(20.dp),
                     style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.End)
             }
+        }
+        if (dua.arabic != null) item {
+            OutlinedButton(
+                onClick = { speech?.speak(dua.arabic, TextToSpeech.QUEUE_FLUSH, null, "dua_$id") },
+                enabled = ttsReady && ttsSupported,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (!ttsReady) "Ses hazırlanıyor…" else if (ttsSupported) "Arapça dinle" else "Arapça ses paketi gerekli") }
+            Text("Cihazın sentetik Arapça sesi kullanılır; kıraat kaydı değildir.",
+                style = MaterialTheme.typography.bodySmall)
         }
         item {
             Text(if (dua.arabic != null) "Türkçe anlamı" else "Türkçe dua örneği", style = MaterialTheme.typography.titleMedium)

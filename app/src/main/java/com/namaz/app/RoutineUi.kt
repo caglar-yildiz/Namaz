@@ -78,7 +78,7 @@ internal fun MarkRow(label: String, checked: Boolean, subtitle: String? = null, 
 }
 
 @Composable
-internal fun RoutineMarks(date: LocalDate, showWeek: Boolean = false) {
+internal fun RoutineMarks(date: LocalDate, showWeek: Boolean = false, onEdit: ((Routine) -> Unit)? = null) {
     val context = LocalContext.current
     val revision = preferenceRevision(RoutineStore.NAME)
     val routines = remember(context, date, revision) { RoutineStore.forDay(context, date) }
@@ -90,8 +90,13 @@ internal fun RoutineMarks(date: LocalDate, showWeek: Boolean = false) {
                 val streak = RoutineStore.streak(context, routine, date)
                 if (streak >= 2) "$week · $streak tekrar üst üste" else week
             } else null
-            MarkRow(routine.title, RoutineStore.completed(context, routine, date), detail) {
-                RoutineStore.mark(context, routine, date, it)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) {
+                    MarkRow(routine.title, RoutineStore.completed(context, routine, date), detail) {
+                        RoutineStore.mark(context, routine, date, it)
+                    }
+                }
+                if (onEdit != null) TextButton(onClick = { onEdit(routine) }) { Text("Düzenle") }
             }
         }
     }

@@ -21,7 +21,8 @@ import java.time.temporal.ChronoUnit
 @Composable
 internal fun NamazHome(
     onEvent: (String) -> Unit, onVakit: () -> Unit, onJournal: () -> Unit,
-    onTool: (String) -> Unit, onWheel: () -> Unit, onNewRoutine: () -> Unit
+    onTool: (String) -> Unit, onWheel: () -> Unit, onNewRoutine: () -> Unit,
+    onEditRoutine: (Routine) -> Unit, onReminders: () -> Unit
 ) {
     val context = LocalContext.current
     val now = currentIstanbulTime()
@@ -105,18 +106,19 @@ internal fun NamazHome(
                 }
             }
         }
-        item { Text("Günlük özet", style = MaterialTheme.typography.titleLarge) }
+        item { DashboardCard("Hatırlatıcılar", "Namaz, dini günler ve rutin bildirimleri", "◷", onReminders) }
+        item { Text("Günlük özet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
         item { DashboardCard("Namaz takibim", "$marked / 5 namaz işaretlendi", "✓", onJournal) }
         if (due > 0) item { DashboardCard("Kur’an Ezberi", "$due ayet tekrar bekliyor", "☾") { onTool("memorize") } }
         item {
-            Text("Rutinlerim", style = MaterialTheme.typography.titleLarge)
-            RoutineMarks(today, showWeek = true)
+            Text("Rutinlerim", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            RoutineMarks(today, showWeek = true, onEdit = onEditRoutine)
             TextButton(onClick = onNewRoutine) { Text("Rutin ekle") }
         }
         event?.let { next -> item {
             DashboardCard(next.name, next.date.format(format), "☾") { onEvent(next.date.toString()) }
         } }
-        item { Text("Keşfet", style = MaterialTheme.typography.titleLarge) }
+        item { Text("Keşfet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
         item { DashboardCard("Dualar", "Günlük hayat ve özel günler için", "◇") { onTool("duas") } }
         item { DashboardCard("İyilik Çarkı", "Bugün yapabileceğin bir iyilik seç", "✦", onWheel) }
     }

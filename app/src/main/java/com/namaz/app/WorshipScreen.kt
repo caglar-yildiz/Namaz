@@ -17,7 +17,7 @@ internal fun WorshipScreen(open: (String) -> Unit, onNewRoutine: () -> Unit) {
         WorshipStore.prayers.filter { WorshipStore.completed(context, today, it) }
     }
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("İbadet", style = MaterialTheme.typography.headlineLarge) }
+        item { Text("İbadet", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Bugünkü kayıtlar", style = MaterialTheme.typography.titleLarge)
