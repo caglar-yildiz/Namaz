@@ -126,7 +126,9 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
                             onJournal = { select(Tab.WORSHIP) },
                             onTool = ::open,
                             onWheel = { open("wheel") },
-                            onNewRoutine = { edit() }
+                            onNewRoutine = { edit() },
+                            onEditRoutine = { edit(it) },
+                            onReminders = { reminderGroup = "Namaz vakitleri"; select(Tab.REMINDERS) }
                         )
                         Tab.DAYS -> ReligiousDaysScreen(initialDate = selectedDay, onOpenDuas = ::open,
                             onReminder = { reminderGroup = "Dini günler"; select(Tab.REMINDERS) }, onInitialDateUsed = { selectedDay = null })
@@ -139,7 +141,7 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
         }
     }
     editId?.let { id ->
-        val existing = remember(id) { RoutineStore.all(context).firstOrNull { it.id == id } }
+        val existing = RoutineStore.all(context).firstOrNull { it.id == id }
         val routine = existing ?: Routine(id = id, title = editTitle, prayerId = editPrayer)
         RoutineEditor(routine, existing == null) { editId = null }
     }
@@ -184,6 +186,6 @@ internal fun DashboardCard(title: String, subtitle: String, symbol: String, onCl
 internal fun InnerHeader(title: String, onBack: () -> Unit) {
     Column {
         TextButton(onClick = onBack) { Text("‹ Geri") }
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
     }
 }
