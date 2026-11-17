@@ -49,7 +49,7 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
     val dayLead = remember(revision) { ReligiousDayReminders.leadDays(context) }
 
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+        item { ScreenTitle("Hatırlatıcılar", "Namaz, dini günler ve rutin bildirimleri") }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Namaz vakitleri", "Dini günler", "Kişisel rutinler").forEach { title ->

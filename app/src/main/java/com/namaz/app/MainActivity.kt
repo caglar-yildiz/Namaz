@@ -5,6 +5,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -22,27 +29,18 @@ import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-internal val Emerald = Color(0xFF14594B)
-internal val DarkEmerald = Color(0xFF103E36)
-internal val Gold = Color(0xFFD7B56D)
-private val Cream = Color(0xFFF8F6F0)
-private val Ink = Color(0xFF203B34)
-
-private val NamazColors = lightColorScheme(
-    primary = Emerald, onPrimary = Color.White, secondary = Gold, onSecondary = DarkEmerald,
-    background = Cream, onBackground = Ink, surface = Color.White, onSurface = Ink,
-    surfaceVariant = Color(0xFFE8F0EB), onSurfaceVariant = DarkEmerald,
-    primaryContainer = Color(0xFFDDEDE5), onPrimaryContainer = DarkEmerald, outline = Color(0xFFB8C8BE)
-)
-
 class MainActivity : ComponentActivity() {
     private var opening by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Cream.toArgb(), Cream.toArgb()),
+            navigationBarStyle = SystemBarStyle.light(Color.White.toArgb(), Color.White.toArgb())
+        )
         super.onCreate(savedInstanceState)
         RoutineAlarm.refresh(this, replace = false)
         if (savedInstanceState == null) readDestination(intent)
-        setContent { MaterialTheme(colorScheme = NamazColors) { NamazApp(opening) { opening = null } } }
+        setContent { NamazTheme { NamazApp(opening) { opening = null } } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -56,9 +54,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String, val symbol: String) {
-    HOME("Ana Sayfa", "⌂"), DAYS("Dini Günler", "▦"), REMINDERS("Hatırlatıcı", "◷"),
-    WORSHIP("İbadet", "◎"), SETTINGS("Ayarlar", "⚙")
+private enum class Tab(val label: String, val icon: ImageVector) {
+    HOME("Ana Sayfa", Icons.Filled.Home), DAYS("Dini Günler", Icons.Filled.DateRange),
+    REMINDERS("Hatırlatıcı", Icons.Filled.Notifications), WORSHIP("İbadet", Icons.Filled.Favorite),
+    SETTINGS("Ayarlar", Icons.Filled.Settings)
 }
 
 @Composable
@@ -100,11 +99,17 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
     }
 
     Scaffold(containerColor = Cream, bottomBar = {
-        NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
+        NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
             Tab.entries.forEach { item ->
                 NavigationBarItem(selected = tab == item, onClick = { select(item) },
-                    icon = { Text(item.symbol, fontSize = 22.sp) },
-                    label = { Text(item.label, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                    icon = { Icon(item.icon, contentDescription = null) },
+                    label = { Text(item.label, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Emerald, selectedTextColor = Emerald,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ))
             }
         }
     }) { padding ->
@@ -166,7 +171,9 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
 
 @Composable
 internal fun DashboardCard(title: String, subtitle: String, symbol: String, onClick: () -> Unit) {
-    ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer) {
@@ -178,15 +185,16 @@ internal fun DashboardCard(title: String, subtitle: String, symbol: String, onCl
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("›", color = Emerald, fontSize = 23.sp)
+            ChevronIcon()
         }
     }
 }
 
 @Composable
 internal fun InnerHeader(title: String, onBack: () -> Unit) {
-    Column {
-        TextButton(onClick = onBack) { Text("‹ Geri") }
-        Text(title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) { BackIcon() }
+        Text(title, Modifier.weight(1f).offset(x = (-8).dp), style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }

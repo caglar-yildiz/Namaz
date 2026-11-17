@@ -62,12 +62,12 @@ internal fun WorshipHistoryScreen(onBack: () -> Unit) {
                 TextButton(onClick = {
                     val previous = month.minusMonths(1)
                     monthKey = previous.toString(); selectedKey = previous.atDay(1).toString()
-                }) { Text("‹ Önceki") }
+                }) { Text("Önceki") }
                 Text(month.atDay(1).format(monthLabel))
                 TextButton(enabled = month < thisMonth, onClick = {
                     val next = month.plusMonths(1)
                     monthKey = next.toString(); selectedKey = next.atDay(1).toString()
-                }) { Text("Sonraki ›") }
+                }) { Text("Sonraki") }
             }
         }
         item {

@@ -94,3 +94,12 @@ Kotlin, Jetpack Compose, Android SDK (minSdk 26, targetSdk 35).
 - [ ] Tüm ekranlar arasında anlık senkronizasyonun cihazda doğrulanması.
 
 Bu değişiklikler kod seviyesindedir; APK veya başarılı build iddiası değildir.
+
+## Tasarım iyileştirmeleri (`design/ui-polish`)
+
+- Renkler, şekiller ve yazı ağırlıkları tek bir `Theme.kt` dosyasında toplandı; ekranlardaki kopya renk tanımları kaldırıldı.
+- Alt menüde ve oklarda Unicode semboller yerine Material ikonları kullanılıyor (`material-icons-core`).
+- Durum çubuğu ve gezinme çubuğu uygulama renklerine uyumlu (edge-to-edge); açılışta beyaz flaş yerine krem arka plan.
+- İç ekran başlıkları geri ikonu + başlık satırı oldu; sekme ve bölüm başlıkları ortak bileşenlerle tutarlı hâle geldi.
+- Ana Sayfa'da sıradaki vakit vurgulanıyor, geçmiş vakitler soluk gösteriliyor.
+- Derleme ve cihaz testi yapılmadı.

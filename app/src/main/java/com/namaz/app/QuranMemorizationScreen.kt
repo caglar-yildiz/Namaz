@@ -21,10 +21,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 
-private val deep = Color(0xFF103E36)
-private val emerald = Color(0xFF14594B)
-private val gold = Color(0xFFD7B56D)
-private val cream = Color(0xFFF8F6F0)
+private val deep = DarkEmerald
+private val emerald = Emerald
+private val gold = Gold
+private val cream = Cream
 
 private data class MemorizeSurah(val number: Int, val title: String, val ayahs: Int)
 private data class MemorizeAyah(val text: String, val audio: String)
@@ -201,7 +201,7 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
                         Text("Kur'an Ezberi", color = Color.White,
                             style = MaterialTheme.typography.headlineLarge)
                         Text("Dinle, gizle, hatırla ve düzenli tekrar et.",
-                            color = Color(0xFFE4EFE9))
+                            color = OnDarkMuted)
                     }
                 }
             }

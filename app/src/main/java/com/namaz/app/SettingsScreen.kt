@@ -19,8 +19,8 @@ internal fun SettingsScreen(onReminders: () -> Unit) {
     val revision = preferenceRevision("prayer_reminder_preferences")
     val selectedSound = remember(revision) { ReminderPreferences.sound(context) }
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Ayarlar", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
-        item { Text("Bildirim sesi", style = MaterialTheme.typography.titleLarge) }
+        item { ScreenTitle("Ayarlar") }
+        item { SectionTitle("Bildirim sesi") }
         listOf("silent" to "Sessiz", "soft" to "Hafif kısa ton", "default" to "Standart ses", "vibrate" to "Titreşim").forEach { (key, label) ->
             item {
                 val selected = selectedSound == key
@@ -37,6 +37,7 @@ internal fun SettingsScreen(onReminders: () -> Unit) {
             runCatching { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                 .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) }
         }) { Text("Android bildirim ayarları") } }
-        item { Text("Namaz kayıtların, zikir sayın ve rutinlerin bu cihazda saklanır.", style = MaterialTheme.typography.bodySmall) }
+        item { Text("Namaz kayıtların, zikir sayın ve rutinlerin bu cihazda saklanır.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }

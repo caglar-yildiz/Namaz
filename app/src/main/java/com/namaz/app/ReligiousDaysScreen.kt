@@ -1,4 +1,7 @@
 package com.namaz.app
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,11 +65,11 @@ object ReligiousDaysData {
         ReligiousDay(LocalDate.of(2027, 12, 24), "Miraç Kandili", "Diyanet İşleri Başkanlığı 2027 dini günler listesi.")
     )
 }
-private val forest = Color(0xFF103E36)
-private val emerald = Color(0xFF14594B)
-private val gold = Color(0xFFD7B56D)
-private val cream = Color(0xFFF8F6F0)
-private val mint = Color(0xFFE8F2EB)
+private val forest = DarkEmerald
+private val emerald = Emerald
+private val gold = Gold
+private val cream = Cream
+private val mint = Mint
 
 @Composable
 internal fun ReligiousDaysScreen(
@@ -96,9 +99,7 @@ internal fun ReligiousDaysScreen(
         contentPadding = PaddingValues(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Text("Dini Günler", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text("Kandiller, bayramlar ve özel tarihler",
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ScreenTitle("Dini Günler", "Kandiller, bayramlar ve özel tarihler")
         }
         item {
             Card(onClick = { dateKey = next?.date?.toString() }, enabled = next != null, shape = RoundedCornerShape(24.dp),
@@ -110,7 +111,7 @@ internal fun ReligiousDaysScreen(
                     Text(next?.name ?: "Yeni tarihler hazırlanıyor",
                         color = Color.White, style = MaterialTheme.typography.headlineSmall)
                     Text(next?.date?.format(fmt) ?: "Takvim verileri yakında eklenecek.",
-                        color = Color(0xFFDDEAE4))
+                        color = OnDarkMuted)
                     if (next != null) {
                         Surface(color = gold, shape = RoundedCornerShape(12.dp)) {
                             Text(if (next.date == today) "Bugün" else
@@ -132,9 +133,13 @@ internal fun ReligiousDaysScreen(
                         Text(month.format(monthFmt).replaceFirstChar { it.titlecase(locale) },
                             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Row {
-                            TextButton(onClick = { monthKey = month.minusMonths(1).toString() }) { Text("‹") }
+                            IconButton(onClick = { monthKey = month.minusMonths(1).toString() }) {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Önceki ay", tint = emerald)
+                            }
                             TextButton(onClick = { monthKey = YearMonth.from(today).toString() }) { Text("Bugün") }
-                            TextButton(onClick = { monthKey = month.plusMonths(1).toString() }) { Text("›") }
+                            IconButton(onClick = { monthKey = month.plusMonths(1).toString() }) {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Sonraki ay", tint = emerald)
+                            }
                         }
                     }
                     Row(Modifier.fillMaxWidth()) {
@@ -245,7 +250,7 @@ private fun ReligiousEventCard(event: ReligiousDay, fmt: DateTimeFormatter, onCl
                 Text(event.date.format(fmt), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("›", color = emerald, style = MaterialTheme.typography.headlineMedium)
+            ChevronIcon(emerald)
         }
     }
 }

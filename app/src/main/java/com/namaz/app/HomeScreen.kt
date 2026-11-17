@@ -1,5 +1,8 @@
 package com.namaz.app
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,8 +67,7 @@ internal fun NamazHome(
 
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            Text("Bugün", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text(today.format(format), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ScreenTitle("Bugün", today.format(format).replaceFirstChar { it.titlecase(turkish) })
         }
         item {
             Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = DarkEmerald, contentColor = Color.White)) {
@@ -86,14 +88,24 @@ internal fun NamazHome(
                                 })
                             } else Text("Bugünün son vakti geçti.", style = MaterialTheme.typography.titleLarge)
                             HorizontalDivider(color = Color(0xFF48756A))
-                            dailyTimes.forEach { (name, time) ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    val color = if (name == nextToday?.key) Gold else Color.White
-                                    Text(name, color = color)
-                                    Text(time.format(shortTime), color = color)
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                dailyTimes.forEach { (name, time) ->
+                                    val isNext = name == nextToday?.key
+                                    val passed = !isNext && time <= now.toLocalDateTime()
+                                    Row(
+                                        Modifier.fillMaxWidth()
+                                            .background(if (isNext) Gold.copy(alpha = 0.18f) else Color.Transparent, RoundedCornerShape(10.dp))
+                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        val color = when { isNext -> Gold; passed -> OnDarkMuted.copy(alpha = 0.6f); else -> Color.White }
+                                        val weight = if (isNext) FontWeight.Bold else FontWeight.Normal
+                                        Text(name, color = color, fontWeight = weight)
+                                        Text(time.format(shortTime), color = color, fontWeight = weight)
+                                    }
                                 }
                             }
-                            Text("$city · Pilot vakit verisi (AlAdhan)", style = MaterialTheme.typography.bodySmall)
+                            Text("$city · Pilot vakit verisi (AlAdhan)", style = MaterialTheme.typography.bodySmall, color = OnDarkMuted)
                         }
                     }
                     Row {
@@ -107,18 +119,22 @@ internal fun NamazHome(
             }
         }
         item { DashboardCard("Hatırlatıcılar", "Namaz, dini günler ve rutin bildirimleri", "◷", onReminders) }
-        item { Text("Günlük özet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+        item { SectionTitle("Günlük özet") }
         item { DashboardCard("Namaz takibim", "$marked / 5 namaz işaretlendi", "✓", onJournal) }
         if (due > 0) item { DashboardCard("Kur’an Ezberi", "$due ayet tekrar bekliyor", "☾") { onTool("memorize") } }
         item {
-            Text("Rutinlerim", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            SectionTitle("Rutinlerim")
             RoutineMarks(today, showWeek = true, onEdit = onEditRoutine)
-            TextButton(onClick = onNewRoutine) { Text("Rutin ekle") }
+            TextButton(onClick = onNewRoutine) {
+                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Rutin ekle")
+            }
         }
         event?.let { next -> item {
             DashboardCard(next.name, next.date.format(format), "☾") { onEvent(next.date.toString()) }
         } }
-        item { Text("Keşfet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+        item { SectionTitle("Keşfet") }
         item { DashboardCard("Dualar", "Günlük hayat ve özel günler için", "◇") { onTool("duas") } }
         item { DashboardCard("İyilik Çarkı", "Bugün yapabileceğin bir iyilik seç", "✦", onWheel) }
     }

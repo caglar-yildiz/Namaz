@@ -1,5 +1,7 @@
 package com.namaz.app
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -17,13 +19,15 @@ internal fun WorshipScreen(open: (String) -> Unit, onNewRoutine: () -> Unit) {
         WorshipStore.prayers.filter { WorshipStore.completed(context, today, it) }
     }
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("İbadet", style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+        item { ScreenTitle("İbadet", "Günlük kayıtların, rutinlerin ve öğrenme araçların") }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Bugünkü kayıtlar", style = MaterialTheme.typography.titleLarge)
-                Text("${completed.size} / 5", color = MaterialTheme.colorScheme.primary)
+            SectionTitle("Bugünkü kayıtlar") {
+                Text("${completed.size} / 5", color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium)
             }
-            LinearProgressIndicator({ completed.size / 5f }, Modifier.fillMaxWidth().padding(vertical = 8.dp))
+            LinearProgressIndicator({ completed.size / 5f },
+                Modifier.fillMaxWidth().padding(vertical = 8.dp).height(6.dp),
+                trackColor = MaterialTheme.colorScheme.primaryContainer, drawStopIndicator = {})
         }
         item {
             ElevatedCard(Modifier.fillMaxWidth()) {
@@ -36,11 +40,15 @@ internal fun WorshipScreen(open: (String) -> Unit, onNewRoutine: () -> Unit) {
             TextButton(onClick = { open("history") }) { Text("Haftalık ve aylık geçmiş") }
         }
         item {
-            Text("Kişisel rutinler", style = MaterialTheme.typography.titleLarge)
+            SectionTitle("Kişisel rutinler")
             RoutineMarks(today, showWeek = true)
-            TextButton(onClick = onNewRoutine) { Text("Rutin ekle") }
+            TextButton(onClick = onNewRoutine) {
+                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Rutin ekle")
+            }
         }
-        item { Text("Öğren ve uygula", style = MaterialTheme.typography.titleLarge) }
+        item { SectionTitle("Öğren ve uygula") }
         item { DashboardCard("Zikirmatik", "Zikrini ve günlük hedefini seç", "◎") { open("dhikr") } }
         item { DashboardCard("Kur’an Ezberi", "Ayetleri dinle, gizle ve tekrar et", "☾") { open("memorize") } }
         item { DashboardCard("Dualar", "Günlük dualar, özel günler ve favoriler", "◇") { open("duas") } }
