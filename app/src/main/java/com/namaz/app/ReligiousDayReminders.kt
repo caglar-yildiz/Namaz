@@ -73,7 +73,7 @@ object ReligiousDayReminders {
         if (date != event.date.minusDays(leadDays(context).toLong())) return
         val message = if (leadDays(context) == 1)
             "Yarın: ${event.name}" else "Bugün: ${event.name}"
-        ReminderNotifications.send(context, "Dini gün hatırlatması", message)
+        ReminderNotifications.send(context, "Dini gün hatırlatması", message, "day:${event.date}")
     }
 }
 

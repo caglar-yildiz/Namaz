@@ -54,15 +54,21 @@ object ReminderNotifications {
         Build.VERSION.SDK_INT < 33 ||
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    fun send(context: Context, title: String, message: String) {
+    fun send(context: Context, title: String, message: String, destination: String? = null) {
         if (!canNotify(context)) return
         createChannels(context)
         val channel = channelId(ReminderPreferences.sound(context))
+        val intent = Intent(context, MainActivity::class.java)
+            .setData(destination?.let { android.net.Uri.parse("namaz://open/$it") })
+        val open = PendingIntent.getActivity(context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = Notification.Builder(context, channel)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(message)
             .setAutoCancel(true)
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setContentIntent(open)
             .build()
         context.getSystemService(NotificationManager::class.java)
             .notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)

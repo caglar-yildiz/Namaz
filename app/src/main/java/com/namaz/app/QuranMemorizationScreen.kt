@@ -1,7 +1,9 @@
 package com.namaz.app
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +27,7 @@ private val gold = Color(0xFFD7B56D)
 private val cream = Color(0xFFF8F6F0)
 
 private data class MemorizeSurah(val number: Int, val title: String, val ayahs: Int)
+private data class MemorizeAyah(val text: String, val audio: String)
 private val shortSurahs = listOf(
     MemorizeSurah(1, "Fâtiha", 7),
     MemorizeSurah(112, "İhlâs", 4),
@@ -39,34 +42,31 @@ private val shortSurahs = listOf(
 )
 
 /** API returns Arabic Quran text; never substitute invented or incomplete verses. */
-private suspend fun loadAyahs(number: Int): List<String> =
+private suspend fun loadAyahs(surah: MemorizeSurah): List<MemorizeAyah> =
     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val connection = (java.net.URL("https://api.alquran.cloud/v1/surah/$number/ar.alafasy")
+        val connection = (java.net.URL("https://api.alquran.cloud/v1/surah/${surah.number}/ar.alafasy")
             .openConnection() as java.net.HttpURLConnection)
         connection.connectTimeout = 10000
         connection.readTimeout = 10000
         try {
             if (connection.responseCode != 200) error("HTTP ${connection.responseCode}")
             val json = org.json.JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-            val ayahs = json.getJSONObject("data").getJSONArray("ayahs")
+            val data = json.getJSONObject("data")
+            require(data.getInt("number") == surah.number)
+            val ayahs = data.getJSONArray("ayahs")
+            require(ayahs.length() == surah.ayahs)
             (0 until ayahs.length()).map { i ->
-                ayahs.getJSONObject(i).getString("text")
+                val ayah = ayahs.getJSONObject(i)
+                require(ayah.getInt("numberInSurah") == i + 1)
+                val audio = ayah.getString("audio")
+                require(audio.startsWith("https://"))
+                MemorizeAyah(ayah.getString("text"), audio)
             }
         } finally { connection.disconnect() }
     }
 
-private fun audioUrl(surah: Int, verse: Int): String =
-    "https://cdn.islamic.network/quran/audio/128/ar.alafasy/${surahVerseGlobalNumber(surah, verse)}.mp3"
-
-private fun surahVerseGlobalNumber(surah: Int, verse: Int): Int {
-    // Verse offsets for the ten supported surahs, from standard 6236-verse numbering.
-    val starts = mapOf(1 to 1, 103 to 6178, 105 to 6190, 107 to 6199,
-        108 to 6206, 109 to 6209, 110 to 6215, 112 to 6222, 113 to 6226, 114 to 6231)
-    return (starts[surah] ?: 1) + verse - 1
-}
-
 private object MemorizeStore {
-    private const val NAME = "quran_memorization_v1"
+    internal const val NAME = "quran_memorization_v1"
     fun mastered(context: Context, surah: Int, verse: Int): Boolean =
         context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
             .getBoolean("mastered_${surah}_$verse", false)
@@ -74,7 +74,8 @@ private object MemorizeStore {
         val prefs = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean("mastered_${surah}_$verse", value)
             .putString("review_${surah}_$verse",
-                if (value) LocalDate.now().plusDays(1).toString() else "").apply()
+                if (value) WorshipStore.today().plusDays(1).toString() else "")
+            .remove("streak_${surah}_$verse").apply()
     }
     fun reviewDate(context: Context, surah: Int, verse: Int): LocalDate? {
         val raw = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
@@ -89,7 +90,18 @@ private object MemorizeStore {
         val days = listOf(1L, 3L, 7L, 14L)[streak.coerceAtMost(3)]
         prefs.edit().putInt(streakKey, streak)
             .putBoolean("mastered_${surah}_$verse", true)
-            .putString("review_${surah}_$verse", LocalDate.now().plusDays(days).toString()).apply()
+            .putString("review_${surah}_$verse", WorshipStore.today().plusDays(days).toString()).apply()
+    }
+}
+
+@Composable
+internal fun pendingMemorization(today: LocalDate): Int {
+    val context = LocalContext.current
+    val revision = preferenceRevision(MemorizeStore.NAME)
+    return remember(today, revision) {
+        shortSurahs.sumOf { surah -> (1..surah.ayahs).count { verse ->
+            MemorizeStore.reviewDate(context, surah.number, verse)?.let { it <= today } == true
+        } }
     }
 }
 
@@ -100,14 +112,21 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
     var verseIndex by remember { mutableIntStateOf(0) }
     var hidden by remember { mutableStateOf(false) }
     var repeatCount by remember { mutableIntStateOf(3) }
-    var revision by remember { mutableIntStateOf(0) }
+    val revision = preferenceRevision(MemorizeStore.NAME)
+    val today = currentIstanbulTime().toLocalDate()
     var playing by remember { mutableStateOf(false) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var playError by remember { mutableStateOf("") }
     var remaining by remember { mutableIntStateOf(0) }
 
-    val verses by produceState<List<String>?>(initialValue = null, key1 = surah) {
-        value = if (surah == null) null else try { loadAyahs(surah!!.number) } catch (_: Exception) { emptyList() }
+    val verses by key(surah) {
+        produceState<List<MemorizeAyah>?>(null) {
+            value = null
+            val selected = surah ?: return@produceState
+            value = try { loadAyahs(selected) }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { emptyList() }
+        }
     }
     DisposableEffect(surah) {
         onDispose { player?.release(); player = null; playing = false }
@@ -118,8 +137,21 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
         playing = false
         remaining = 0
     }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) stopAudio()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    fun goBack() {
+        stopAudio()
+        if (surah == null) onBack() else { surah = null; verseIndex = 0 }
+    }
+    BackHandler(surah != null, onBack = ::goBack)
     fun playRepeats() {
-        val current = surah ?: return
+        val audio = verses?.getOrNull(verseIndex)?.audio ?: return
         stopAudio()
         playError = ""
         remaining = repeatCount
@@ -127,9 +159,12 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
             val mp = MediaPlayer()
             player = mp
             try {
-                mp.setDataSource(audioUrl(current.number, verseIndex + 1))
-                mp.setOnPreparedListener { it.start(); playing = true }
+                mp.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                mp.setDataSource(audio)
+                mp.setOnPreparedListener { if (player === it) { it.start(); playing = true } }
                 mp.setOnCompletionListener {
+                    if (player !== it) return@setOnCompletionListener
                     it.release()
                     player = null
                     remaining--
@@ -154,10 +189,7 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize().background(cream),
         contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            TextButton(onClick = {
-                stopAudio()
-                if (surah == null) onBack() else { surah = null; verseIndex = 0 }
-            }) { Text("← " + if (surah == null) "İbadet" else "Sureler") }
+            TextButton(onClick = ::goBack) { Text("← " + if (surah == null) "Geri" else "Sureler") }
         }
         if (surah == null) {
             item {
@@ -176,10 +208,13 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
             item { Text("Kısa sureler", style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold) }
             items(shortSurahs) { item ->
-                val done = (1..item.ayahs).count { MemorizeStore.mastered(context, item.number, it) }
-                val due = (1..item.ayahs).count {
-                    val date = MemorizeStore.reviewDate(context, item.number, it)
-                    date != null && !date.isAfter(LocalDate.now())
+                val done = remember(item, revision) {
+                    (1..item.ayahs).count { MemorizeStore.mastered(context, item.number, it) }
+                }
+                val due = remember(item, revision, today) {
+                    (1..item.ayahs).count { verse ->
+                        MemorizeStore.reviewDate(context, item.number, verse)?.let { it <= today } == true
+                    }
                 }
                 Card(Modifier.fillMaxWidth().clickable {
                     surah = item; verseIndex = 0; hidden = false
@@ -223,7 +258,7 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
                             verticalArrangement = Arrangement.spacedBy(18.dp)) {
                             Text("AYET ${verseIndex + 1}", color = emerald,
                                 style = MaterialTheme.typography.labelLarge)
-                            Text(if (hidden) "•••" else text[verseIndex],
+                            Text(if (hidden) "•••" else text[verseIndex].text,
                                 style = MaterialTheme.typography.headlineMedium,
                                 textAlign = TextAlign.Center, color = deep)
                             OutlinedButton(onClick = { hidden = !hidden }) {
@@ -247,14 +282,13 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
                     if (playError.isNotBlank()) Text(playError, color = MaterialTheme.colorScheme.error)
                 }
                 item {
-                    val mastered = MemorizeStore.mastered(context, current.number, verseIndex + 1)
-                    val due = MemorizeStore.reviewDate(context, current.number, verseIndex + 1)
+                    val mastered = remember(current, verseIndex, revision) { MemorizeStore.mastered(context, current.number, verseIndex + 1) }
+                    val due = remember(current, verseIndex, revision) { MemorizeStore.reviewDate(context, current.number, verseIndex + 1) }
                     Text("Ezber durumu", style = MaterialTheme.typography.titleMedium)
                     Text(if (mastered) "Ezberlendi" else "Henüz tamamlanmadı")
                     if (due != null) Text("Sonraki tekrar: $due")
                     Button(onClick = {
                         MemorizeStore.setMastered(context, current.number, verseIndex + 1, !mastered)
-                        revision++
                     }, modifier = Modifier.fillMaxWidth()) {
                         Text(if (mastered) "Ezberi kaldır" else "Bu ayeti ezberledim")
                     }
@@ -262,11 +296,9 @@ fun QuranMemorizationScreen(onBack: () -> Unit) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = {
                                 MemorizeStore.review(context, current.number, verseIndex + 1, false)
-                                revision++
                             }) { Text("Zorlandım") }
                             OutlinedButton(onClick = {
                                 MemorizeStore.review(context, current.number, verseIndex + 1, true)
-                                revision++
                             }) { Text("Hatırladım") }
                         }
                     }
