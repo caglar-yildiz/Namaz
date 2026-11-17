@@ -116,6 +116,7 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
                     route == "memorize" -> QuranMemorizationScreen(::back)
                     route == "dhikr" -> DhikrScreen(::back)
                     route == "guide" -> PrayerGuideScreen(::back)
+                    route == "ablution" -> AblutionGuideScreen(::back)
                     route == "wheel" -> KindnessWheel(::back)
                     route?.startsWith("dua:") == true -> DuaDetail(route.substringAfter(':'), ::back, ::edit)
                     route?.startsWith("duas") == true -> DuaLibrary(route.substringAfter(':', "").ifEmpty { null }, ::back) { open("dua:$it") }
