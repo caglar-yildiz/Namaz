@@ -52,12 +52,12 @@ private object ChannelFeeds {
         connection.connectTimeout = 10000
         connection.readTimeout = 10000
         try {
-            require(connection.responseCode == 200)
+            require(connection.responseCode == 200) { "Kanal HTTP ${connection.responseCode}" }
             val html = connection.inputStream.bufferedReader().use { it.readText().take(2_000_000) }
             val patterns = listOf(
-                Regex(""""channelId"\\s*:\\s*"(UC[A-Za-z0-9_-]{22})""""),
-                Regex(""""externalId"\\s*:\\s*"(UC[A-Za-z0-9_-]{22})""""),
-                Regex("""youtube\\.com/channel/(UC[A-Za-z0-9_-]{22})""")
+                Regex("""channelId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"""),
+                Regex("""externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"""),
+                Regex("""youtube\.com/channel/(UC[A-Za-z0-9_-]{22})""")
             )
             return patterns.firstNotNullOfOrNull { it.find(html)?.groupValues?.get(1) }
                 ?: error("Kanal kimliği otomatik bulunamadı")
@@ -122,16 +122,16 @@ internal fun VideoFeedScreen() {
         try {
             val result = withContext(Dispatchers.IO) {
                 val loaded = mutableListOf<ChannelVideo>()
-                var failed = 0
+                val failures = mutableListOf<String>()
                 ids.forEach { id ->
                     try { loaded.addAll(ChannelFeeds.fetch(ChannelFeeds.resolve(id))) }
                     catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { failed++ }
+                    catch (e: Exception) { failures.add("${id.take(45)}: ${e.javaClass.simpleName}: ${e.message.orEmpty()}") }
                 }
-                loaded to failed
+                loaded to failures
             }
             videos = result.first.distinctBy { it.id }.sortedByDescending { it.published }
-            if (result.second > 0) error = "${result.second} kanalın videoları alınamadı. Kanal kimliklerini ve bağlantıyı kontrol et."
+            if (result.second.isNotEmpty()) error = result.second.joinToString("\n")
         } catch (cancelled: CancellationException) { throw cancelled }
         finally { loading = false }
     }
