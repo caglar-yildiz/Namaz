@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
 
 private enum class Tab(val label: String, val symbol: String) {
     HOME("Ana Sayfa", "⌂"), DAYS("Dini Günler", "▦"), REMINDERS("Hatırlatıcı", "◷"),
-    WORSHIP("İbadet", "◎"), VIDEOS("Videolar", "▶"), SETTINGS("Ayarlar", "⚙")
+    WORSHIP("İbadet", "◎"), SETTINGS("Ayarlar", "⚙")
 }
 
 @Composable
@@ -134,7 +134,6 @@ private fun NamazApp(opening: String?, consumeOpening: () -> Unit) {
                             onReminder = { reminderGroup = "Dini günler"; select(Tab.REMINDERS) }, onInitialDateUsed = { selectedDay = null })
                         Tab.REMINDERS -> RemindersScreen(reminderGroup, { reminderGroup = it }, { edit(it) })
                         Tab.WORSHIP -> WorshipScreen(::open) { edit() }
-                        Tab.VIDEOS -> VideoFeedScreen()
                         Tab.SETTINGS -> SettingsScreen { reminderGroup = "Namaz vakitleri"; select(Tab.REMINDERS) }
                     }
                 }
