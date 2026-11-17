@@ -4,7 +4,12 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -14,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -34,7 +40,7 @@ internal fun DhikrScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val prefs = remember { context.getSharedPreferences("namaz_display", 0) }
-    var vibrate by remember { mutableStateOf(prefs.getBoolean("dhikr_haptics", false)) }
+    var vibrate by remember { mutableStateOf(prefs.getBoolean("dhikr_haptics", true)) }
     var selected by rememberSaveable { mutableStateOf(WorshipStore.phrases.first()) }
     val today = currentIstanbulTime().toLocalDate()
     val revision = preferenceRevision(WorshipStore.STORE)
@@ -42,7 +48,14 @@ internal fun DhikrScreen(onBack: () -> Unit) {
     val target = remember(revision) { WorshipStore.target(context) }
     val fraction = (count.toFloat() / target).coerceIn(0f, 1f)
     val progress by animateFloatAsState(fraction, tween(220), label = "dhikr-progress")
-    val bead by animateFloatAsState(count.toFloat(), tween(220), label = "dhikr-bead")
+    val bead by animateFloatAsState(count.toFloat(), tween(180), label = "dhikr-bead")
+    val tone = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 35) }
+    DisposableEffect(tone) { onDispose { tone.release() } }
+    fun advance() {
+        WorshipStore.increment(context, selected)
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
+        if (vibrate) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
     val green = MaterialTheme.colorScheme.primary
     val gold = MaterialTheme.colorScheme.secondary
     val track = MaterialTheme.colorScheme.primaryContainer
@@ -51,21 +64,43 @@ internal fun DhikrScreen(onBack: () -> Unit) {
         item { InnerHeader("Zikirmatik", onBack) }
         item {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(210.dp), contentAlignment = Alignment.Center) {
+                Text("Tesbihe dokun veya bir tane çek", style = MaterialTheme.typography.bodySmall)
+                Box(
+                    Modifier.size(250.dp)
+                        .pointerInput(selected) { detectTapGestures { advance() } }
+                        .pointerInput(selected) {
+                            var consumed = false
+                            detectDragGestures(
+                                onDragStart = { consumed = false },
+                                onDragEnd = { consumed = false },
+                                onDragCancel = { consumed = false }
+                            ) { change, _ ->
+                                change.consume()
+                                if (!consumed) {
+                                    consumed = true
+                                    advance()
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
                     Canvas(Modifier.fillMaxSize()) {
-                        val inset = 14.dp.toPx()
-                        val radius = size.minDimension / 2 - inset
-                        val arc = Size(size.width - inset * 2, size.height - inset * 2)
-                        drawArc(track, 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(5.dp.toPx()))
-                        drawArc(green, -90f, 360 * progress, false, Offset(inset, inset), arc,
-                            style = Stroke(5.dp.toPx(), cap = StrokeCap.Round))
-                        for (point in 0 until 24) {
-                            val angle = point * PI / 12 - PI / 2
-                            drawCircle(if (point / 24f <= progress) green else track, 4.dp.toPx(),
-                                center + Offset(cos(angle).toFloat() * radius, sin(angle).toFloat() * radius))
+                        val radius = size.minDimension / 2 - 21.dp.toPx()
+                        val beadCount = 33
+                        // Rotate the entire strand as a single rigid piece: one gesture = one bead.
+                        rotate(360f * bead / beadCount) {
+                            for (point in 0 until beadCount) {
+                                val angle = point * 2 * PI / beadCount - PI / 2
+                                val position = center + Offset(
+                                    cos(angle).toFloat() * radius,
+                                    sin(angle).toFloat() * radius
+                                )
+                                drawCircle(track, 10.dp.toPx(), position)
+                                drawCircle(if (point == 0) gold else green, 7.5.dp.toPx(), position)
+                                drawCircle(gold.copy(alpha = 0.28f), 2.dp.toPx(),
+                                    position + Offset(-2.dp.toPx(), -2.dp.toPx()))
+                            }
                         }
-                        val angle = bead / target * PI * 2 - PI / 2
-                        drawCircle(gold, 8.dp.toPx(), center + Offset(cos(angle).toFloat() * radius, sin(angle).toFloat() * radius))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("$count", style = MaterialTheme.typography.displayMedium)
@@ -78,8 +113,7 @@ internal fun DhikrScreen(onBack: () -> Unit) {
         }
         item {
             Button(modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp), onClick = {
-                WorshipStore.increment(context, selected)
-                if (vibrate) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                advance()
             }) { Text("+1 Zikir", style = MaterialTheme.typography.titleMedium) }
         }
         item {
@@ -100,7 +134,7 @@ internal fun DhikrScreen(onBack: () -> Unit) {
         }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Dokunmada titreşim", Modifier.weight(1f))
+                Text("Titreşim", Modifier.weight(1f))
                 Switch(vibrate, { vibrate = it; prefs.edit().putBoolean("dhikr_haptics", it).apply() })
             }
             TextButton(onClick = { reset = true }, enabled = count > 0) { Text("Bugünkü sayacı sıfırla") }
