@@ -200,7 +200,21 @@ private fun YoutubeEmbed(videoId: String) {
                 settings.domStorageEnabled = true
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
-                loadUrl("https://www.youtube-nocookie.com/embed/$videoId?playsinline=1")
+                // YouTube requires an identifiable embedding origin (Error 153 otherwise).
+                // loadDataWithBaseURL supplies a real HTTPS origin for the iframe.
+                val origin = "https://com.namaz.app"
+                val html = """
+                    <!doctype html><html><head>
+                    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+                    <style>html,body{margin:0;width:100%;height:100%;background:#000}
+                    iframe{border:0;width:100%;height:100%}</style>
+                    </head><body>
+                    <iframe src="https://www.youtube.com/embed/$videoId?playsinline=1&origin=$origin"
+                      title="YouTube video" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    </body></html>
+                """.trimIndent()
+                loadDataWithBaseURL("$origin/", html, "text/html", "UTF-8", null)
             }
         }, modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f),
             onRelease = { it.stopLoading(); it.destroy() })
