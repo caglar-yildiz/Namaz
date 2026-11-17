@@ -200,7 +200,13 @@ private fun YoutubeEmbed(videoId: String) {
                 settings.domStorageEnabled = true
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
-                loadUrl("https://www.youtube-nocookie.com/embed/$videoId?playsinline=1")
+                // YouTube requires a Referer or equivalent client identity (error 153).
+                // Use Android's documented app-specific Referer scheme for embedded players.
+                val appReferer = "https://${context.packageName.lowercase()}"
+                loadUrl(
+                    "https://www.youtube.com/embed/$videoId?playsinline=1",
+                    mapOf("Referer" to appReferer)
+                )
             }
         }, modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f),
             onRelease = { it.stopLoading(); it.destroy() })
