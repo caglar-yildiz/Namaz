@@ -1,0 +1,174 @@
+package com.namaz.app
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.xmlpull.v1.XmlPullParser
+import android.util.Xml
+import java.net.HttpURLConnection
+import java.net.URL
+
+private data class ChannelVideo(val id: String, val title: String, val channel: String, val published: String)
+
+private object ChannelFeeds {
+    private val channelPattern = Regex("^UC[A-Za-z0-9_-]{22}$")
+    fun valid(input: String): Boolean = channelPattern.matches(input.trim())
+    fun fetch(channelId: String): List<ChannelVideo> {
+        require(valid(channelId))
+        val connection = URL("https://www.youtube.com/feeds/videos.xml?channel_id=$channelId").openConnection() as HttpURLConnection
+        connection.connectTimeout = 10000
+        connection.readTimeout = 10000
+        try {
+            require(connection.responseCode == 200) { "Feed HTTP ${connection.responseCode}" }
+            val parser = Xml.newPullParser()
+            connection.inputStream.use { stream ->
+                parser.setInput(stream, "UTF-8")
+                val result = mutableListOf<ChannelVideo>()
+                var inEntry = false
+                var id = ""
+                var title = ""
+                var channel = ""
+                var published = ""
+                var event = parser.eventType
+                while (event != XmlPullParser.END_DOCUMENT) {
+                    if (event == XmlPullParser.START_TAG) {
+                        when {
+                            parser.name == "entry" -> { inEntry = true; id = ""; title = ""; published = "" }
+                            parser.name == "name" && !inEntry -> channel = parser.nextText()
+                            inEntry && parser.name == "videoId" -> id = parser.nextText()
+                            inEntry && parser.name == "title" -> title = parser.nextText()
+                            inEntry && parser.name == "published" -> published = parser.nextText()
+                        }
+                    } else if (event == XmlPullParser.END_TAG && parser.name == "entry") {
+                        if (id.matches(Regex("[A-Za-z0-9_-]{11}"))) result.add(ChannelVideo(id, title, channel, published))
+                        inEntry = false
+                    }
+                    event = parser.next()
+                }
+                return result
+            }
+        } finally { connection.disconnect() }
+    }
+}
+
+@Composable
+internal fun VideoFeedScreen() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("video_channels", 0) }
+    var channels by remember { mutableStateOf(prefs.getString("ids", "").orEmpty()) }
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    var videos by remember { mutableStateOf<List<ChannelVideo>>(emptyList()) }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+    var revision by remember { mutableIntStateOf(0) }
+    val ids = remember(channels) { channels.lines().map(String::trim).filter(String::isNotBlank).distinct().take(10) }
+    LaunchedEffect(channels, revision) {
+        videos = emptyList()
+        if (ids.isEmpty()) return@LaunchedEffect
+        loading = true
+        error = ""
+        try {
+            val result = withContext(Dispatchers.IO) {
+                val loaded = mutableListOf<ChannelVideo>()
+                var failed = 0
+                ids.forEach { id ->
+                    try { loaded.addAll(ChannelFeeds.fetch(id)) }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { failed++ }
+                }
+                loaded to failed
+            }
+            videos = result.first.distinctBy { it.id }.sortedByDescending { it.published }
+            if (result.second > 0) error = "${result.second} kanalın videoları alınamadı. Kanal kimliklerini ve bağlantıyı kontrol et."
+        } catch (cancelled: CancellationException) { throw cancelled }
+        finally { loading = false }
+    }
+    if (selected != null) {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { selected = null }) { Text("‹ Videolara dön") }
+            Text("Video", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            YoutubeEmbed(selected!!)
+            TextButton(onClick = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$selected")))
+            }) { Text("YouTube'da aç") }
+        }
+        return
+    }
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text("Videolar", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text("Seçtiğin YouTube kanallarının son yüklemeleri otomatik listelenir. Shorts ayrımı henüz yapılmıyor.",
+                style = MaterialTheme.typography.bodySmall)
+        }
+        item {
+            OutlinedButton(onClick = { editing = !editing }, modifier = Modifier.fillMaxWidth()) {
+                Text("Kanalları yönet (${ids.size}/10)")
+            }
+        }
+        if (editing) item {
+            var draft by rememberSaveable { mutableStateOf(channels) }
+            OutlinedTextField(draft, { draft = it }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("YouTube kanal kimlikleri (UC…; her satıra bir tane)") },
+                minLines = 3)
+            Text("Kanalın /channel/UC… adresindeki kimliğini gir. En fazla 10 kanal.",
+                style = MaterialTheme.typography.bodySmall)
+            Button(enabled = draft.lines().map(String::trim).filter(String::isNotBlank).let {
+                it.size <= 10 && it.all(ChannelFeeds::valid)
+            }, onClick = {
+                channels = draft.lines().map(String::trim).filter(String::isNotBlank).distinct().joinToString("\n")
+                prefs.edit().putString("ids", channels).apply()
+                editing = false
+            }) { Text("Kanalları kaydet") }
+        }
+        if (ids.isEmpty()) item { Text("Başlamak için 'Kanalları yönet' bölümünden bir YouTube kanal kimliği ekle.") }
+        if (loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (error.isNotBlank()) item { Text(error, color = MaterialTheme.colorScheme.error) }
+        if (ids.isNotEmpty()) item {
+            OutlinedButton(onClick = { revision++ }) { Text("Videoları yenile") }
+        }
+        items(videos, key = { it.id }) { video ->
+            DashboardCard(video.title, video.channel, "▶") { selected = video.id }
+        }
+        if (!loading && ids.isNotEmpty() && videos.isEmpty() && error.isBlank()) item {
+            Text("Bu kanallardan henüz video bulunamadı.")
+        }
+        item { Text("Videolar YouTube'un resmi gömülü oynatıcısında açılır. Bazı içerikler gömülmeye kapalı olabilir.",
+            style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun YoutubeEmbed(videoId: String) {
+    val context = LocalContext.current
+    key(videoId) {
+        AndroidView(factory = {
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                webChromeClient = WebChromeClient()
+                webViewClient = WebViewClient()
+                loadUrl("https://www.youtube-nocookie.com/embed/$videoId?playsinline=1")
+            }
+        }, modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f),
+            onRelease = { it.stopLoading(); it.destroy() })
+    }
+}
