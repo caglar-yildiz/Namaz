@@ -45,5 +45,6 @@ internal fun WorshipScreen(open: (String) -> Unit, onNewRoutine: () -> Unit) {
         item { DashboardCard("Kur’an Ezberi", "Ayetleri dinle, gizle ve tekrar et", "☾") { open("memorize") } }
         item { DashboardCard("Dualar", "Günlük dualar, özel günler ve favoriler", "◇") { open("duas") } }
         item { DashboardCard("Namazı Öğren", "Beş vakit için adım adım sesli prova", "▷") { open("guide") } }
+        item { DashboardCard("Abdest Almayı Öğren", "Abdestin farzları ve adım adım uygulanışı", "◉") { open("ablution") } }
     }
 }
