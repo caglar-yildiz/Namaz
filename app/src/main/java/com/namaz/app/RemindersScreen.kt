@@ -1,0 +1,188 @@
+package com.namaz.app
+
+import android.Manifest
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Context
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import android.content.SharedPreferences
+
+private val prayerNames = listOf("İmsak", "Öğle", "İkindi", "Akşam", "Yatsı")
+private const val PREFS_NAME = "prayer_reminder_preferences"
+
+@Composable
+fun RemindersScreen() {
+    val context = LocalContext.current
+    var preferencesRevision by remember { mutableIntStateOf(0) }
+    DisposableEffect(context) {
+        val prefsListenerStore = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> preferencesRevision++ }
+        prefsListenerStore.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefsListenerStore.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    val scope = rememberCoroutineScope()
+    var city by remember { mutableStateOf(ReminderRefresh.city(context) ?: "Ankara") }
+    var syncStatus by remember { mutableStateOf("") }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    var testStatus by remember { mutableStateOf("") }
+    val prefs = remember(context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+    val prayerCategoryEnabled = remember(context, preferencesRevision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
+    val enabled = remember(context, preferencesRevision) {
+        mutableStateMapOf<String, Boolean>().apply {
+            prayerNames.forEach { name -> put(name, prefs.getBoolean(name, false)) }
+        }
+    }
+    val leadMinutes = remember(context, preferencesRevision) { prefs.getInt("lead_minutes", 0) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { Text("Hatırlatıcılar", style = MaterialTheme.typography.headlineMedium) }
+        item {
+            OutlinedTextField(value = city, onValueChange = { city = it },
+                label = { Text("Şehir (pilot)") }, singleLine = true)
+            Button(onClick = {
+                if (!ReminderNotifications.canNotify(context)) {
+                    syncStatus = "Önce bildirim iznini etkinleştirin."
+                    if (Build.VERSION.SDK_INT >= 33)
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    scope.launch {
+                        syncStatus = "Vakitler alınıyor..."
+                        syncStatus = try {
+                            val count = withContext(Dispatchers.IO) {
+                                PrayerTimesService.scheduleNextDay(context, city.trim()).also {
+                                    ReminderRefresh.saveCity(context, city)
+                                    PrayerRefreshWork.ensurePeriodic(context)
+                                }
+                            }
+                            "$count hatırlatma yaklaşık zamanlamayla planlandı (bugün ve yarın)."
+                        } catch (e: Exception) {
+                            "Vakitler alınamadı; bağlantı ve şehir adını kontrol edin."
+                        }
+                    }
+                }
+            }) { Text("Namaz bildirimlerini planla") }
+            Text(syncStatus)
+            Text("Pilot kaynak AlAdhan; resmî Diyanet vakitleriyle eşitliği garanti edilmez.",
+                style = MaterialTheme.typography.bodySmall)
+        }
+        item {
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    testStatus = "Bildirim izni istendi. İzin verdikten sonra test düğmesine tekrar basın."
+                } else {
+                    ReminderNotifications.scheduleTest(context)
+                    testStatus = "Yaklaşık bir dakika içinde test bildirimi planlandı."
+                }
+            }) { Text("Test bildirimi planla") }
+            if (testStatus.isNotEmpty()) Text(testStatus)
+        }
+        item {
+            Text(
+                "Namaz vakitleri için bildirim tercihlerini belirleyin. " +
+                    "Gerçek bildirimler, güvenilir vakit verisi ve Android izinleri " +
+                    "entegre edildiğinde çalışacaktır."
+            )
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Namaz vakti bildirimleri", modifier = Modifier.weight(1f))
+                Switch(checked = prayerCategoryEnabled, onCheckedChange = {
+                    ReminderPreferences.setEnabled(context, "Namaz vakitleri", it)
+                    if (!it) PrayerTimesService.cancelAll(context) else PrayerRefreshWork.refreshNow(context)
+                })
+            }
+        }
+        item { Text("Namaz vakitleri", style = MaterialTheme.typography.titleLarge) }
+        prayerNames.forEach { name ->
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(name, modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = enabled[name] == true,
+                        enabled = prayerCategoryEnabled,
+                        onCheckedChange = { value ->
+                            enabled[name] = value
+                            prefs.edit().putBoolean(name, value).apply()
+                            PrayerRefreshWork.refreshNow(context)
+                        }
+                    )
+                }
+            }
+        }
+        item { HorizontalDivider() }
+        item {
+            Text("Kandil ve bayram bildirimleri", style = MaterialTheme.typography.titleLarge)
+            Text("Bildirimler yalnızca bu kategori açıksa gönderilir. Saat: yaklaşık 09.00.")
+            val religiousEnabled = ReminderPreferences.enabled(context, "Kandil ve bayramlar")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Dini günleri hatırlat", modifier = Modifier.weight(1f))
+                Switch(checked = religiousEnabled, onCheckedChange = {
+                    ReminderPreferences.setEnabled(context, "Kandil ve bayramlar", it)
+                    ReligiousDayReminders.reconcile(context)
+                    if (it && Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context))
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                })
+            }
+            listOf(1 to "Bir gün önce", 0 to "Aynı gün").forEach { (days, label) ->
+                Row(Modifier.fillMaxWidth()) {
+                    RadioButton(
+                        selected = ReligiousDayReminders.leadDays(context) == days,
+                        enabled = religiousEnabled,
+                        onClick = { ReligiousDayReminders.setLeadDays(context, days); preferencesRevision++ }
+                    )
+                    Text(label, modifier = Modifier.padding(top = 12.dp))
+                }
+            }
+        }
+        item { HorizontalDivider() }
+        item { Text("Ne kadar önce hatırlatılsın?", style = MaterialTheme.typography.titleMedium) }
+        item {
+            listOf(0, 5, 10, 15, 30).forEach { minutes ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    RadioButton(
+                        selected = leadMinutes == minutes,
+                        onClick = {
+                            prefs.edit().putInt("lead_minutes", minutes).apply()
+                            ReminderRefresh.refreshAsync(context)
+                        }
+                    )
+                    Text(
+                        if (minutes == 0) "Vakit geldiğinde" else "$minutes dakika önce",
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
+            }
+        }
+        item {
+            Text(
+                "Not: Pilot vakit verisi resmî Diyanet saatleriyle doğrulanmadı; " +
+                    "bildirimler yaklaşık zamanlanır. Test bildirimi gerçek namaz vakti değildir.",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
