@@ -6,7 +6,7 @@ import java.time.ZoneId
 
 /** Local-only worship journal. Never sends personal worship data to a server. */
 object WorshipStore {
-    private const val STORE = "worship_journal_v1"
+    internal const val STORE = "worship_journal_v1"
     private val zone = ZoneId.of("Europe/Istanbul")
     val prayers = listOf("Sabah", "Öğle", "İkindi", "Akşam", "Yatsı")
     val phrases = listOf("Sübhanallah", "Elhamdülillah", "Allahu ekber", "Salavat")

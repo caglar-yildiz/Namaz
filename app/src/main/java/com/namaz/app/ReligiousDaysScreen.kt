@@ -69,13 +69,25 @@ private val cream = Color(0xFFF8F6F0)
 private val mint = Color(0xFFE8F2EB)
 
 @Composable
-fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
-    val today = LocalDate.now()
+internal fun ReligiousDaysScreen(
+    initialDate: String?, onOpenDuas: (String) -> Unit, onReminder: () -> Unit,
+    onInitialDateUsed: () -> Unit, days: List<ReligiousDay> = ReligiousDaysData.days
+) {
+    val today = currentIstanbulTime().toLocalDate()
     val locale = remember { Locale.forLanguageTag("tr-TR") }
     val fmt = remember { DateTimeFormatter.ofPattern("d MMMM yyyy", locale) }
     val monthFmt = remember { DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
-    var month by remember { mutableStateOf(YearMonth.from(today)) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var monthKey by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(YearMonth.from(today).toString()) }
+    val month = YearMonth.parse(monthKey)
+    var dateKey by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(initialDate) {
+        val date = initialDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        if (date != null && days.any { it.date == date }) {
+            monthKey = YearMonth.from(date).toString()
+            dateKey = date.toString()
+        }
+        if (initialDate != null) onInitialDateUsed()
+    }
     val upcoming = days.filter { !it.date.isBefore(today) }.sortedBy { it.date }
     val next = upcoming.firstOrNull()
     val monthEvents = days.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
@@ -89,7 +101,7 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
-            Card(shape = RoundedCornerShape(24.dp),
+            Card(onClick = { dateKey = next?.date?.toString() }, enabled = next != null, shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = forest)) {
                 Column(Modifier.fillMaxWidth().padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -120,9 +132,9 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                         Text(month.format(monthFmt).replaceFirstChar { it.titlecase(locale) },
                             style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Row {
-                            TextButton(onClick = { month = month.minusMonths(1) }) { Text("‹") }
-                            TextButton(onClick = { month = YearMonth.from(today) }) { Text("Bugün") }
-                            TextButton(onClick = { month = month.plusMonths(1) }) { Text("›") }
+                            TextButton(onClick = { monthKey = month.minusMonths(1).toString() }) { Text("‹") }
+                            TextButton(onClick = { monthKey = YearMonth.from(today).toString() }) { Text("Bugün") }
+                            TextButton(onClick = { monthKey = month.plusMonths(1).toString() }) { Text("›") }
                         }
                     }
                     Row(Modifier.fillMaxWidth()) {
@@ -149,7 +161,7 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                                         }
                                         Box(Modifier.size(38.dp)
                                             .background(bg, RoundedCornerShape(12.dp))
-                                            .clickable(enabled = hasEvent) { selectedDate = date },
+                                            .clickable(enabled = hasEvent) { dateKey = date.toString() },
                                             contentAlignment = Alignment.Center) {
                                             Text(number.toString() + if (hasEvent) "•" else "",
                                                 color = if (hasEvent) Color.White else forest,
@@ -177,14 +189,14 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                 }
             }
         } else {
-            items(monthEvents) { event -> ReligiousEventCard(event, fmt) { selectedDate = event.date } }
+            items(monthEvents) { event -> ReligiousEventCard(event, fmt) { dateKey = event.date.toString() } }
         }
         item { Text("Yaklaşan tarihler", style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold) }
         if (upcoming.isEmpty()) {
             item { Text("Yeni tarih kayıtları bekleniyor.") }
         } else {
-            items(upcoming) { event -> ReligiousEventCard(event, fmt) { selectedDate = event.date } }
+            items(upcoming) { event -> ReligiousEventCard(event, fmt) { dateKey = event.date.toString() } }
         }
         item {
             Text("Kaynak: Diyanet İşleri Başkanlığı 2026–2027 dini günler listeleri. Tarihler güncellenebilir; bildirim entegrasyonu ayrıca test edilmelidir.",
@@ -192,17 +204,26 @@ fun ReligiousDaysScreen(days: List<ReligiousDay> = ReligiousDaysData.days) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-    selectedDate?.let { date ->
+    dateKey?.let(LocalDate::parse)?.let { date ->
         val eventsOnDate = days.filter { it.date == date }
-        AlertDialog(onDismissRequest = { selectedDate = null },
+        AlertDialog(onDismissRequest = { dateKey = null },
             title = { Text(date.format(fmt)) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 eventsOnDate.forEach { event ->
                     Text(event.name, fontWeight = FontWeight.Bold)
                     Text(event.description, style = MaterialTheme.typography.bodySmall)
                 }
+                val duaId = when {
+                    eventsOnDate.any { it.name == "Kadir Gecesi" } -> "kadir"
+                    eventsOnDate.any { "Bayram" in it.name } -> "solidarity"
+                    else -> "hasene"
+                }
+                val dua = Duas.all.first { it.id == duaId }
+                TextButton(onClick = { onOpenDuas("dua:$duaId") }) { Text(dua.title) }
+                TextButton(onClick = { onOpenDuas("duas:${Duas.SPECIAL}") }) { Text("Özel gün dualarına bak") }
+                TextButton(onClick = { dateKey = null; onReminder() }) { Text("Dini gün hatırlatıcıları") }
             } },
-            confirmButton = { TextButton(onClick = { selectedDate = null }) { Text("Kapat") } })
+            confirmButton = { TextButton(onClick = { dateKey = null }) { Text("Kapat") } })
     }
 }
 

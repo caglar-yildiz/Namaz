@@ -43,7 +43,8 @@ class WorshipReminderReceiver : BroadcastReceiver() {
                 ReminderNotifications.send(
                     context,
                     "İbadet takibi",
-                    "Bugün $marked / 5 namaz kaydınız var. Dilerseniz günlüğünüzü güncelleyin."
+                    "Bugün $marked / 5 namaz kaydınız var. Dilerseniz günlüğünüzü güncelleyin.",
+                    "worship"
                 )
             }
         } finally {

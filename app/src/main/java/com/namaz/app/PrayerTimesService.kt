@@ -49,6 +49,11 @@ object PrayerTimesService {
         }
     }
 
+    fun forDisplay(context: Context, date: LocalDate, city: String): Map<String, LocalDateTime> =
+        PrayerTimeCache.read(context, city, date) ?: fetch(date, city).also {
+            PrayerTimeCache.save(context, city, date, it)
+        }
+
     private fun requestId(date: LocalDate, index: Int): Int = 1000 + ((date.toEpochDay() % 100000).toInt() * 10) + index
 
     fun cancelAll(context: Context) {

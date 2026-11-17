@@ -63,6 +63,7 @@ object ReminderRefresh {
 class ReminderRefreshReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
+            intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             intent.action == Intent.ACTION_TIME_CHANGED ||
             intent.action == Intent.ACTION_TIMEZONE_CHANGED ||
             intent.component?.className == ReminderRefreshReceiver::class.java.name) {
@@ -70,6 +71,8 @@ class ReminderRefreshReceiver : BroadcastReceiver() {
             try {
                 PrayerRefreshWork.refreshNow(context)
                 WorshipReminder.reconcile(context)
+                ReligiousDayReminders.reconcile(context)
+                RoutineAlarm.refresh(context)
             } finally {
                 pending.finish()
             }

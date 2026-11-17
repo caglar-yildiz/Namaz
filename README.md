@@ -2,6 +2,14 @@
 
 Türkiye odaklı Kotlin / Jetpack Compose Android namaz vakitleri ve dini günler uygulaması.
 
+## 0.2.0 deneme sürümü
+
+- Ana Sayfa, kaydedilen şehrin pilot namaz vakitlerini, günlük özeti, rutinleri ve İyilik Çarkı’nı gösterir.
+- İbadet’te animasyonlu zikirmatik, Kur’an ezberi, dua kütüphanesi ve beş vaktin farzı için sesli prova bulunur. Prova, Android’in Türkçe ses motorunu kullanır.
+- Dualar favorilere veya kişisel rutinlere eklenebilir. Takip geçmişi, rutinler için haftalık ve aylık kayıtları da gösterir.
+- Hatırlatıcı’da rutin günleri ve saatleri düzenlenir. Dini gün detayları ilgili duaya ve bildirim tercihlerine açılır.
+- Deneme APK’sı `:app:assembleDebug` göreviyle üretilir. Namaz vakitleri AlAdhan pilot kaynağından gelir.
+
 ## Sekmeler ve durum (14 Kasım 2026)
 
 | Sekme | Durum |
