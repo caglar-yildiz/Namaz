@@ -113,9 +113,30 @@ internal fun DhikrScreen(onBack: () -> Unit) {
 }
 
 private val kindnessIdeas = listOf(
-    "Bir yakınını ara ve hâlini sor.", "Birine, yaptığı bir şey için içtenlikle teşekkür et.",
-    "Yardıma ihtiyacı olan birine zaman ayır.", "Kullanmadığın temiz bir eşyayı ihtiyaç sahibine ulaştır.",
-    "Bir komşuna alışverişte yardım teklif et.", "Bir arkadaşına güzel bir anınızı hatırlatan bir mesaj yaz."
+    "Bir yakınını ara ve hâlini sor.",
+    "Birine, yaptığı bir şey için içtenlikle teşekkür et.",
+    "Yardıma ihtiyacı olan birine zaman ayır.",
+    "Kullanmadığın temiz bir eşyayı ihtiyaç sahibine ulaştır.",
+    "Bir komşuna alışverişte yardım teklif et.",
+    "Bir arkadaşına güzel bir anınızı hatırlatan mesaj yaz.",
+    "Bugün birine içten bir iltifat et.",
+    "Yaşlı bir yakınını ziyaret et veya ara.",
+    "Sokaktaki bir hayvan için temiz su bırak.",
+    "Bir arkadaşının derdini bölmeden dinle.",
+    "Birine öğrendiğin yararlı bir bilgiyi öğret.",
+    "Çevrende gördüğün çöpleri uygun şekilde topla.",
+    "Birine teşekkür mesajı gönder.",
+    "Bir aile üyesinin işini kolaylaştır.",
+    "İhtiyaç sahibi için küçük bir bağış yap.",
+    "Birine kitap öner veya kitap hediye et.",
+    "Gönüllü bir çalışmaya katılma fırsatı araştır.",
+    "Bugün birine yol göstererek yardımcı ol.",
+    "Bir arkadaşına destekleyici bir mesaj yaz.",
+    "Toplu taşımada ihtiyaç sahibine yer ver.",
+    "İsrafı azaltmak için kullanmadığın ışıkları kapat.",
+    "Birinden özür dilemen gerekiyorsa iletişime geç.",
+    "Birinin başarısını içtenlikle kutla.",
+    "Bir iyilik yap ve karşılık bekleme."
 )
 
 @Composable
@@ -130,14 +151,14 @@ internal fun KindnessWheel(onBack: () -> Unit) {
     val arrow = MaterialTheme.colorScheme.onSurface
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { InnerHeader("İyilik Çarkı", onBack) }
-        item { Text("Bugün yapabileceğin küçük bir iyilik seç.") }
+        item { Text("${kindnessIdeas.size} farklı iyilik önerisinden birini keşfet.") }
         item {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.size(230.dp)) {
                     val inset = 12.dp.toPx()
                     val wheel = Size(size.width - 2 * inset, size.height - 2 * inset)
-                    colors.forEachIndexed { index, color ->
-                        drawArc(color, -90f + index * sweep + angle.value, sweep, true, Offset(inset, inset), wheel)
+                    kindnessIdeas.indices.forEach { index ->
+                        drawArc(colors[index % colors.size], -90f + index * sweep + angle.value, sweep, true, Offset(inset, inset), wheel)
                     }
                     drawLine(arrow, Offset(center.x, 0f), Offset(center.x, 22.dp.toPx()), 5.dp.toPx(), StrokeCap.Round)
                 }
