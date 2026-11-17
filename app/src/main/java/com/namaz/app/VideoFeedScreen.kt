@@ -30,6 +30,40 @@ private data class ChannelVideo(val id: String, val title: String, val channel: 
 private object ChannelFeeds {
     private val channelPattern = Regex("^UC[A-Za-z0-9_-]{22}$")
     fun valid(input: String): Boolean = channelPattern.matches(input.trim())
+    fun accepted(input: String): Boolean = runCatching { normalize(input) }.isSuccess
+    private fun normalize(input: String): String {
+        val raw = input.trim()
+        if (valid(raw)) return raw
+        val handle = if (raw.startsWith("@")) raw else {
+            val uri = Uri.parse(if (raw.contains("://")) raw else "https://$raw")
+            require(uri.scheme == "https" && uri.host?.lowercase() in setOf("youtube.com", "www.youtube.com", "m.youtube.com"))
+            val path = uri.path.orEmpty().trim('/')
+            if (path.startsWith("channel/")) return path.substringAfter("channel/").also { require(valid(it)) }
+            require(path.startsWith("@"))
+            path.substringBefore('/')
+        }
+        require(handle.matches(Regex("@[A-Za-z0-9._-]{3,40}")))
+        return handle
+    }
+    fun resolve(input: String): String {
+        val normalized = normalize(input)
+        if (valid(normalized)) return normalized
+        val connection = URL("https://www.youtube.com/" + normalized).openConnection() as HttpURLConnection
+        connection.connectTimeout = 10000
+        connection.readTimeout = 10000
+        try {
+            require(connection.responseCode == 200)
+            val html = connection.inputStream.bufferedReader().use { it.readText().take(2_000_000) }
+            val patterns = listOf(
+                Regex(""""channelId"\\s*:\\s*"(UC[A-Za-z0-9_-]{22})""""),
+                Regex(""""externalId"\\s*:\\s*"(UC[A-Za-z0-9_-]{22})""""),
+                Regex("""youtube\\.com/channel/(UC[A-Za-z0-9_-]{22})""")
+            )
+            return patterns.firstNotNullOfOrNull { it.find(html)?.groupValues?.get(1) }
+                ?: error("Kanal kimliği otomatik bulunamadı")
+        } finally { connection.disconnect() }
+    }
+
     fun fetch(channelId: String): List<ChannelVideo> {
         require(valid(channelId))
         val connection = URL("https://www.youtube.com/feeds/videos.xml?channel_id=$channelId").openConnection() as HttpURLConnection
@@ -90,7 +124,7 @@ internal fun VideoFeedScreen() {
                 val loaded = mutableListOf<ChannelVideo>()
                 var failed = 0
                 ids.forEach { id ->
-                    try { loaded.addAll(ChannelFeeds.fetch(id)) }
+                    try { loaded.addAll(ChannelFeeds.fetch(ChannelFeeds.resolve(id))) }
                     catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { failed++ }
                 }
@@ -126,12 +160,12 @@ internal fun VideoFeedScreen() {
         if (editing) item {
             var draft by rememberSaveable { mutableStateOf(channels) }
             OutlinedTextField(draft, { draft = it }, modifier = Modifier.fillMaxWidth(),
-                label = { Text("YouTube kanal kimlikleri (UC…; her satıra bir tane)") },
+                label = { Text("YouTube kanal linki veya @kullanıcıadı") },
                 minLines = 3)
-            Text("Kanalın /channel/UC… adresindeki kimliğini gir. En fazla 10 kanal.",
+            Text("Örnek: https://youtube.com/@mikrofonyorumdaa. Her satıra bir kanal; en fazla 10.",
                 style = MaterialTheme.typography.bodySmall)
             Button(enabled = draft.lines().map(String::trim).filter(String::isNotBlank).let {
-                it.size <= 10 && it.all(ChannelFeeds::valid)
+                it.size <= 10 && it.all(ChannelFeeds::accepted)
             }, onClick = {
                 channels = draft.lines().map(String::trim).filter(String::isNotBlank).distinct().joinToString("\n")
                 prefs.edit().putString("ids", channels).apply()
