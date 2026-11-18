@@ -114,6 +114,7 @@ object PrayerTimesService {
                         )
                         // Exact when "Alarms & reminders" access is granted, otherwise allow-while-idle.
                         ExactAlarms.schedule(context, at, timed)
+                        AlarmHealth.recordScheduled(context, date, name, at)
                         scheduled++
                     }
                 }

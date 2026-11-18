@@ -102,6 +102,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val prefs = context.getSharedPreferences("prayer_reminder_preferences", Context.MODE_PRIVATE)
         if (!ReminderPreferences.enabled(context, "Namaz vakitleri") ||
             !prefs.getBoolean(prayer, false)) return
+        AlarmHealth.recordFired(context, date, prayer)
         if (date != java.time.LocalDate.now(java.time.ZoneId.of("Europe/Istanbul")).toString()) return
         val (title, message, speech) = prayerAlarmTexts(prayer, intent.getStringExtra("time"),
             intent.getIntExtra("lead", 0), ReminderRefresh.city(context))

@@ -65,6 +65,7 @@ internal fun EasyApp(opening: String?, consumeOpening: () -> Unit) {
         Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             when (route) {
                 "times" -> EasyTimes(speaker, ::back)
+                "reliability" -> EasyReliability(speaker, ::back)
                 "dhikr" -> EasyDhikr(speaker, ::back)
                 "duas" -> EasyDuas(speaker, ::back)
                 else -> EasyHome(speaker) { route = it }
@@ -144,7 +145,7 @@ private fun EasyHome(speaker: Speaker, open: (String) -> Unit) {
     var savingCity by remember { mutableStateOf(false) }
     val reminderRevision = preferenceRevision("prayer_reminder_preferences")
     val remindersOn = remember(reminderRevision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
-    val exactAllowed = rememberExactAlarmAllowed()
+    val reliability = rememberReliability()
 
     LaunchedEffect(times) {
         if (times != null && !spokenOnOpen && AppMode.autoSpeak(context)) {
@@ -250,7 +251,21 @@ private fun EasyHome(speaker: Speaker, open: (String) -> Unit) {
             }
         }
         if (day.failed) item { BigButton("↻", "Tekrar dene", { retry++ }) }
-        if (remindersOn && !exactAllowed) item { ExactAlarmNotice(large = true) }
+        if (remindersOn && reliability.issues > 0) item {
+            Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4D6))) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val missed = reliability.report.missed
+                    Text(
+                        if (missed.isNotEmpty()) "⚠ ${missed.joinToString(", ")} bildirimi gelmedi"
+                        else "⚠ Vakit bildirimleri gecikebilir",
+                        fontSize = 22.sp, fontWeight = FontWeight.SemiBold
+                    )
+                    Text("Telefonun birkaç ayarını açmak gerekiyor. Bir yakınınızdan yardım isteyebilirsiniz.",
+                        fontSize = 19.sp, lineHeight = 26.sp)
+                    BigButton("🔧", "Bildirimleri düzelt", { open("reliability") }, container = DarkEmerald)
+                }
+            }
+        }
         item { BigButton("🎤", "Konuşarak sor", ::listen, container = Gold, content = DarkEmerald) }
         item { BigButton("🕌", "Bugünün vakitleri", { open("times") }) }
         item { BigButton("📿", "Tespih çek", { open("dhikr") }) }
@@ -481,6 +496,35 @@ private fun EasyDuas(speaker: Speaker, onBack: () -> Unit) {
                     }, container = if (isPlaying) DarkEmerald else Emerald)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EasyReliability(speaker: Speaker, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val state = rememberReliability()
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    var testScheduled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        speaker.speak(if (state.issues == 0) "Bildirim ayarlarınız hazır."
+            else "Bildirimlerin tam vaktinde gelmesi için sarı satırlardaki düğmelere sırayla basın.")
+    }
+    LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { EasyHeader("Bildirim ayarları", onBack) }
+        item {
+            ReliabilityChecklist(state, large = true) {
+                if (android.os.Build.VERSION.SDK_INT >= 33) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+        item {
+            BigButton("🔔", "Sesli deneme yap", {
+                ReminderNotifications.scheduleTest(context)
+                testScheduled = true
+                speaker.speak("Bir dakika sonra deneme bildirimi gelecek. Ekranı kapatıp bekleyebilirsiniz.")
+            })
+            if (testScheduled) Text("Bir dakika içinde “Bu bir denemedir” diye konuşmalı. Konuşmazsa ayarları tekrar kontrol edin.",
+                fontSize = 18.sp, lineHeight = 25.sp, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

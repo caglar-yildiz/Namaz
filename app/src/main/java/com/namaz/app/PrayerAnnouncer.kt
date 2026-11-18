@@ -64,22 +64,6 @@ internal object ExactAlarms {
     }
 }
 
-/** Re-checks exact-alarm access whenever the screen comes back, e.g. after visiting system settings. */
-@Composable
-internal fun rememberExactAlarmAllowed(): Boolean {
-    val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var allowed by remember { mutableStateOf(ExactAlarms.allowed(context)) }
-    DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) allowed = ExactAlarms.allowed(context)
-        }
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
-    }
-    return allowed
-}
-
 internal object PrayerAnnouncer {
     private const val SPOKEN_CHANNEL = "namaz_prayer_spoken_v1"
     private const val SPEAK_KEY = "speak_prayer"
@@ -232,32 +216,3 @@ internal fun prayerAlarmTexts(prayer: String, time: String?, leadMinutes: Int, c
     )
 }
 
-/**
- * Explains why reminders may be late and opens the system page to allow exact alarms.
- * Shown only while prayer notifications are on and the access is missing.
- */
-@Composable
-internal fun ExactAlarmNotice(large: Boolean = false) {
-    val context = LocalContext.current
-    androidx.compose.material3.Card(
-        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFFFFF4D6))
-    ) {
-        androidx.compose.foundation.layout.Column(
-            androidx.compose.ui.Modifier.padding(if (large) 20.dp else 14.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-        ) {
-            androidx.compose.material3.Text(
-                "Vakit bildirimleri birkaç dakika gecikebilir",
-                fontSize = if (large) 22.sp else 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-            )
-            androidx.compose.material3.Text(
-                "Tam vaktinde haber verebilmem için telefonun ayarlarında “Alarmlar ve hatırlatıcılar” iznini açın.",
-                fontSize = if (large) 19.sp else 14.sp, lineHeight = if (large) 26.sp else 20.sp
-            )
-            androidx.compose.material3.Button(
-                onClick = { ExactAlarms.openSettings(context) },
-                modifier = androidx.compose.ui.Modifier.heightIn(min = if (large) 60.dp else 44.dp)
-            ) { androidx.compose.material3.Text("İzni aç", fontSize = if (large) 20.sp else 14.sp) }
-        }
-    }
-}

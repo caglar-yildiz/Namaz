@@ -59,7 +59,12 @@ internal fun OnboardingScreen() {
         if (!granted) speaker.speak("Bildirim izni verilmedi. Daha sonra ayarlardan açabilirsiniz.")
     }
 
-    val exactAllowed = rememberExactAlarmAllowed()
+    val reliability = rememberReliability()
+    fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     val tour = if (easy) easyTour else fullTour
     val speech = when (step) {
         0 -> "Hoş geldiniz. Bu uygulama namaz vakitlerini gösterir, vakit gelince haber verir ve sesli yardım eder. " +
@@ -130,19 +135,19 @@ internal fun OnboardingScreen() {
                             BigButton("🔔", "Evet, haber ver", {
                                 notifyAnswer = true
                                 enablePrayerNotifications(context)
-                                if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
-                                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                                // Stay on this step while exact-alarm access still has to be granted.
-                                if (exactAllowed) step++
-                                else if (soundOn) speaker.speak("Son bir izin gerekiyor. Tam vaktinde haber verebilmem için İzni aç düğmesine basın.")
+                                askNotificationPermission()
+                                // Stay on this step while phone settings still need attention.
+                                if (reliability.issues == 0) step++
+                                else if (soundOn) speaker.speak("Bildirimlerin tam vaktinde gelmesi için telefonunuzun birkaç ayarını açmamız gerekiyor. " +
+                                    "Sarı satırlardaki düğmelere sırayla basın. Bu adımı bir yakınınızla yapabilirsiniz.")
                             })
                             OutlinedButton(onClick = { notifyAnswer = false; step++ },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp), shape = RoundedCornerShape(22.dp)) {
                                 Text("Şimdi değil", fontSize = 22.sp)
                             }
-                        } else if (!exactAllowed) {
-                            ExactAlarmNotice(large = true)
+                        } else if (reliability.issues > 0) {
+                            StepText("Telefonunuz bildirimleri geciktirmesin diye şu ayarları açalım:")
+                            ReliabilityChecklist(reliability, large = true, requestNotifications = ::askNotificationPermission)
                         } else {
                             StepText("✓ Vakitlerde sesli haber vereceğim.", color = Emerald)
                         }

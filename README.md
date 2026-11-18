@@ -126,3 +126,15 @@ Derleme: `:app:assembleDebug` 17 Kasım 2026’da başarıyla derlendi (Kotlin u
 - “Önceden hatırlat” seçiliyse “Öğle namazı vaktine 10 dakika kaldı” der. Yatsı alarmı iki günlük planlama penceresini yeniler.
 - “Test bildirimi planla” artık aynı yolu kullanır: bir dakika sonra sesli test bildirimi gelir.
 - Derleme ve `lintDebug` başarılı (yeni kodda uyarı yok). Gerçek cihazda Doze, pil optimizasyonu ve üretici kısıtları (Xiaomi, Huawei vb.) henüz test edilmedi.
+
+## Xiaomi, Huawei, Oppo, Vivo, Samsung: bildirim güvenilirliği
+
+Bu markalar standart Android’in üzerine kendi pil yöneticilerini ekler ve uygulamanın alarmlarını tamamen durdurabilir. Bu ayarlar uygulamadan okunamaz. Çözüm üç katmanlı (`DeviceReliability.kt`):
+
+1. **Kontrol edilebilenler:** bildirim izni, “Alarmlar ve hatırlatıcılar” (kesin alarm) izni ve Android pil optimizasyonu (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). Her biri ✓ / ! olarak gösterilir ve tek dokunuşla ilgili sistem ekranı açılır.
+2. **Markaya özel:** `Build.MANUFACTURER` ile marka algılanır, markanın kendi ekranı açılır (Xiaomi Otomatik başlatma ve pil tasarrufu, Huawei/Honor Uygulama başlatma, Oppo/Realme/OnePlus Otomatik başlatma, Vivo Arka planda başlatma, Samsung Arka plan kullanım sınırları). Ekran o sürümde yoksa sıradaki aday, en son uygulama bilgisi sayfası açılır. Ne yapılacağı Türkçe adımlarla yazılır; kullanıcı “Bunları yaptım” ile onaylar.
+3. **Gerçek ölçüm (`AlarmHealth`):** her vakit alarmının planlanan ve gerçekte çalıştığı zaman kaydedilir. Bugün ve dün için gelmeyen (10 dk tolerans) veya 3 dakikadan geç gelen bildirim varsa uyarı gösterilir. Böylece 1. ve 2. katmanda kaçan bir sorun da ortaya çıkar.
+
+Gösterildiği yerler: tanıtımın bildirim adımı (sorunlar giderilmeden ilerlemez, “Devam” ile atlanabilir), sade ana ekranda “Bildirimleri düzelt” kartı ve ayrı ekran (sesli deneme düğmesiyle), Hatırlatıcılar > Namaz vakitleri.
+
+Notlar: Markaların ekran adresleri yazılım sürümüne göre değişebilir; cihazda doğrulanmadı. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` Google Play’de gerekçe ister (çekirdek işlev: zamanlı namaz hatırlatması). Kaynak: dontkillmyapp.com.

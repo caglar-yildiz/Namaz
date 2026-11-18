@@ -43,7 +43,7 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
     }
     val prayerEnabled = remember(revision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
     val speakPrayer = remember(revision) { PrayerAnnouncer.speakEnabled(context) }
-    val exactAllowed = rememberExactAlarmAllowed()
+    val reliability = rememberReliability()
     val daysEnabled = remember(revision) { ReminderPreferences.enabled(context, "Kandil ve bayramlar") }
     val journalEnabled = remember(revision) { ReminderPreferences.enabled(context, "İbadet takibi") }
     val enabled = remember(revision) { ReminderPreferences.prayers.associateWith { prefs.getBoolean(it, false) } }
@@ -97,7 +97,12 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
                     Text("Telefon sessizde değilse vakit girince “Öğle namazı vakti girdi” diye iki kez söyler.",
                         style = MaterialTheme.typography.bodySmall)
                 }
-                if (prayerEnabled && !exactAllowed) item { ExactAlarmNotice() }
+                if (prayerEnabled) item {
+                    Text(if (reliability.issues == 0) "Bildirim güvenilirliği: her şey hazır" else "Bildirim güvenilirliği",
+                        style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    ReliabilityChecklist(reliability, large = false) { requestPermission() }
+                }
                 enabled.forEach { (name, set) -> item {
                     ReminderToggle(name, set, prayerEnabled) {
                         prefs.edit().putBoolean(name, it).apply()
@@ -155,8 +160,8 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
             OutlinedButton(onClick = {
                 if (ReminderNotifications.canNotify(context)) {
                     ReminderNotifications.scheduleTest(context)
-                    testStatus = if (ExactAlarms.allowed(context)) "Sesli test bildirimi bir dakika sonra gelir."
-                        else "Test bildirimi yaklaşık bir dakika içinde gelir (tam zaman izni kapalı)."
+                    testStatus = if (reliability.issues == 0) "Sesli test bildirimi bir dakika sonra gelir."
+                        else "Test bildirimi yaklaşık bir dakika içinde gelir. Gelmezse yukarıdaki ayarları kontrol edin."
                 } else requestPermission()
             }) { Text("Test bildirimi planla") }
             if (testStatus.isNotBlank()) Text(testStatus, style = MaterialTheme.typography.bodySmall)
