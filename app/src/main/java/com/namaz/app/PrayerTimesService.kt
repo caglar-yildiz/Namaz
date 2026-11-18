@@ -103,12 +103,17 @@ object PrayerTimesService {
                 )
                 manager.cancel(pending)
                 if (category && prefs.getBoolean(name, false)) {
-                    val at = times.getValue(name).minusMinutes(
-                        prefs.getInt("lead_minutes", 0).toLong()
-                    ).atZone(zone).toInstant().toEpochMilli()
+                    val lead = prefs.getInt("lead_minutes", 0)
+                    val prayerTime = times.getValue(name)
+                    val at = prayerTime.minusMinutes(lead.toLong()).atZone(zone).toInstant().toEpochMilli()
                     if (at > System.currentTimeMillis()) {
-                        // Inexact scheduling avoids special exact-alarm permission.
-                        manager.set(AlarmManager.RTC_WAKEUP, at, pending)
+                        val timed = PendingIntent.getBroadcast(
+                            context, requestId,
+                            intent.putExtra("time", prayerTime.toLocalTime().toString()).putExtra("lead", lead),
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        // Exact when "Alarms & reminders" access is granted, otherwise allow-while-idle.
+                        ExactAlarms.schedule(context, at, timed)
                         scheduled++
                     }
                 }

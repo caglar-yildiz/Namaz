@@ -80,9 +80,10 @@ internal fun rememberPrayerDay(today: LocalDate, retry: Int): PrayerDay {
     val context = LocalContext.current
     val revision = preferenceRevision("prayer_reminder_preferences")
     val city = remember(revision) { ReminderRefresh.city(context) }
-    val result by produceState<Result<Map<String, LocalDateTime>>?>(null, city, today, retry) {
-        value = null
-        if (city != null) value = withContext(Dispatchers.IO) {
+    var result by remember { mutableStateOf<Result<Map<String, LocalDateTime>>?>(null) }
+    LaunchedEffect(city, today, retry) {
+        result = null
+        if (city != null) result = withContext(Dispatchers.IO) {
             try { Result.success(PrayerTimesService.forDisplay(context, today, city)) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) { Result.failure(failure) }
@@ -141,6 +142,9 @@ private fun EasyHome(speaker: Speaker, open: (String) -> Unit) {
     var showHelp by rememberSaveable { mutableStateOf(false) }
     var confirmFull by rememberSaveable { mutableStateOf(false) }
     var savingCity by remember { mutableStateOf(false) }
+    val reminderRevision = preferenceRevision("prayer_reminder_preferences")
+    val remindersOn = remember(reminderRevision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
+    val exactAllowed = rememberExactAlarmAllowed()
 
     LaunchedEffect(times) {
         if (times != null && !spokenOnOpen && AppMode.autoSpeak(context)) {
@@ -246,6 +250,7 @@ private fun EasyHome(speaker: Speaker, open: (String) -> Unit) {
             }
         }
         if (day.failed) item { BigButton("↻", "Tekrar dene", { retry++ }) }
+        if (remindersOn && !exactAllowed) item { ExactAlarmNotice(large = true) }
         item { BigButton("🎤", "Konuşarak sor", ::listen, container = Gold, content = DarkEmerald) }
         item { BigButton("🕌", "Bugünün vakitleri", { open("times") }) }
         item { BigButton("📿", "Tespih çek", { open("dhikr") }) }

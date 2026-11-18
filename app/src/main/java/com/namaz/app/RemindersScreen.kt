@@ -42,6 +42,8 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
         }
     }
     val prayerEnabled = remember(revision) { ReminderPreferences.enabled(context, "Namaz vakitleri") }
+    val speakPrayer = remember(revision) { PrayerAnnouncer.speakEnabled(context) }
+    val exactAllowed = rememberExactAlarmAllowed()
     val daysEnabled = remember(revision) { ReminderPreferences.enabled(context, "Kandil ve bayramlar") }
     val journalEnabled = remember(revision) { ReminderPreferences.enabled(context, "İbadet takibi") }
     val enabled = remember(revision) { ReminderPreferences.prayers.associateWith { prefs.getBoolean(it, false) } }
@@ -88,6 +90,14 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
                     if (value) { PrayerRefreshWork.refreshNow(context); requestPermission() }
                     else PrayerTimesService.cancelAll(context)
                 } }
+                item {
+                    ReminderToggle("Vakti sesli söyle", speakPrayer, prayerEnabled) {
+                        PrayerAnnouncer.setSpeakEnabled(context, it)
+                    }
+                    Text("Telefon sessizde değilse vakit girince “Öğle namazı vakti girdi” diye iki kez söyler.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                if (prayerEnabled && !exactAllowed) item { ExactAlarmNotice() }
                 enabled.forEach { (name, set) -> item {
                     ReminderToggle(name, set, prayerEnabled) {
                         prefs.edit().putBoolean(name, it).apply()
@@ -145,7 +155,8 @@ internal fun RemindersScreen(group: String, onGroup: (String) -> Unit, onEdit: (
             OutlinedButton(onClick = {
                 if (ReminderNotifications.canNotify(context)) {
                     ReminderNotifications.scheduleTest(context)
-                    testStatus = "Test bildirimi yaklaşık bir dakika içinde gelir."
+                    testStatus = if (ExactAlarms.allowed(context)) "Sesli test bildirimi bir dakika sonra gelir."
+                        else "Test bildirimi yaklaşık bir dakika içinde gelir (tam zaman izni kapalı)."
                 } else requestPermission()
             }) { Text("Test bildirimi planla") }
             if (testStatus.isNotBlank()) Text(testStatus, style = MaterialTheme.typography.bodySmall)

@@ -58,23 +58,26 @@ object ReminderNotifications {
         if (!canNotify(context)) return
         createChannels(context)
         val channel = channelId(ReminderPreferences.sound(context))
+        val notification = build(context, title, message, channel, destination).build()
+        context.getSystemService(NotificationManager::class.java)
+            .notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
+    }
+
+    fun build(context: Context, title: String, message: String, channel: String, destination: String?): Notification.Builder {
         val intent = Intent(context, MainActivity::class.java)
             .setData(destination?.let { android.net.Uri.parse("namaz://open/$it") })
         val open = PendingIntent.getActivity(context, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = Notification.Builder(context, channel)
+        return Notification.Builder(context, channel)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(message)
             .setAutoCancel(true)
             .setVisibility(Notification.VISIBILITY_PRIVATE)
             .setContentIntent(open)
-            .build()
-        context.getSystemService(NotificationManager::class.java)
-            .notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
     }
 
-    /** Inexact one-shot test, no exact-alarm permission required. */
+    /** One-shot test about a minute later, using the same exact/fallback path as prayer alarms. */
     fun scheduleTest(context: Context) {
         val intent = Intent(context, ReminderReceiver::class.java)
             .putExtra("test", true)
@@ -82,17 +85,16 @@ object ReminderNotifications {
             context, TEST_REQUEST_CODE, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val manager = context.getSystemService(AlarmManager::class.java)
-        manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            SystemClock.elapsedRealtime() + 60_000L, pending)
+        ExactAlarms.schedule(context, System.currentTimeMillis() + 60_000L, pending)
     }
 }
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.getBooleanExtra("test", false)) {
-            ReminderNotifications.send(context, "Namaz test bildirimi",
-                "Bildirim altyapısı çalışıyor. Bu gerçek bir namaz vakti değildir.")
+            PrayerAnnouncer.announce(context, "Namaz test bildirimi",
+                "Bildirim altyapısı çalışıyor. Bu gerçek bir namaz vakti değildir.",
+                "Bu bir denemedir. Namaz vakitlerinde size böyle sesli haber vereceğim.")
             return
         }
         val prayer = intent.getStringExtra("prayer") ?: return
@@ -101,7 +103,10 @@ class ReminderReceiver : BroadcastReceiver() {
         if (!ReminderPreferences.enabled(context, "Namaz vakitleri") ||
             !prefs.getBoolean(prayer, false)) return
         if (date != java.time.LocalDate.now(java.time.ZoneId.of("Europe/Istanbul")).toString()) return
-        ReminderNotifications.send(context, "$prayer vakti hatırlatması",
-            "Seçtiğiniz namaz vakti için hatırlatma.")
+        val (title, message, speech) = prayerAlarmTexts(prayer, intent.getStringExtra("time"),
+            intent.getIntExtra("lead", 0), ReminderRefresh.city(context))
+        PrayerAnnouncer.announce(context, title, message, speech)
+        // The last prayer of the day extends the two-day scheduling horizon.
+        if (prayer == "Yatsı") PrayerRefreshWork.refreshNow(context)
     }
 }

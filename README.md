@@ -117,3 +117,12 @@ Hedef: Uygulamanın yaşlı kullanıcılar tarafından da kolayca kullanılabilm
 - Sesli okuma için telefonda Türkçe TTS (ör. Google konuşma hizmetleri) yüklü olmalı; sesli komut için Google uygulaması gerekir.
 
 Derleme: `:app:assembleDebug` 17 Kasım 2026’da başarıyla derlendi (Kotlin uyarısı yok). Bilinen eksikler: cihaz testi yapılmadı; vakit bildiriminin kendisi henüz sesli okunmuyor; sade modda yazı boyutu sistem yazı boyutu ile birlikte büyür, çok büyük ayarda yerleşim kontrol edilmeli.
+
+## Sesli ve tam zamanında vakit bildirimi
+
+- **Tam zaman:** Vakit alarmları `setExactAndAllowWhileIdle` ile kuruluyor (Doze modunda da dakikasında çalışır). Android 12+ için `SCHEDULE_EXACT_ALARM` gerekir; Android 14’te yeni kurulumlarda bu izin varsayılan olarak kapalıdır. İzin yoksa uygulama `setAndAllowWhileIdle` yöntemine düşer (birkaç dakika gecikebilir) ve tanıtımda, sade ekranda ve Hatırlatıcılar’da “Alarmlar ve hatırlatıcılar” iznini açan bir kart gösterir. İzin verildiğinde alarmlar kendiliğinden yeniden kurulur.
+- **Sesli:** Alarm gelince kısa ömürlü bir ön plan servisi (`PrayerAnnouncementService`, tür: mediaPlayback) bildirimi gösterir ve “Öğle namazı vakti girdi. Saat 12:41.” cümlesini alarm ses seviyesinde, araya kısa bir sessizlik koyarak iki kez okur. Bildirimde “Sustur” düğmesi vardır; servis en geç 45 saniyede kapanır, bildirim ekranda kalır.
+- Telefon sessiz/titreşimdeyse veya görüşme sürüyorsa konuşmaz; seçili bildirim sesiyle normal bildirim gelir. Hatırlatıcılar > Namaz vakitleri’ndeki “Vakti sesli söyle” anahtarıyla kapatılabilir.
+- “Önceden hatırlat” seçiliyse “Öğle namazı vaktine 10 dakika kaldı” der. Yatsı alarmı iki günlük planlama penceresini yeniler.
+- “Test bildirimi planla” artık aynı yolu kullanır: bir dakika sonra sesli test bildirimi gelir.
+- Derleme ve `lintDebug` başarılı (yeni kodda uyarı yok). Gerçek cihazda Doze, pil optimizasyonu ve üretici kısıtları (Xiaomi, Huawei vb.) henüz test edilmedi.

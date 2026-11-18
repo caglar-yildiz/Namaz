@@ -59,13 +59,14 @@ internal fun OnboardingScreen() {
         if (!granted) speaker.speak("Bildirim izni verilmedi. Daha sonra ayarlardan açabilirsiniz.")
     }
 
+    val exactAllowed = rememberExactAlarmAllowed()
     val tour = if (easy) easyTour else fullTour
     val speech = when (step) {
         0 -> "Hoş geldiniz. Bu uygulama namaz vakitlerini gösterir, vakit gelince haber verir ve sesli yardım eder. " +
             "Devam etmek için aşağıdaki Devam düğmesine basın."
         1 -> "Uygulamayı nasıl kullanmak istersiniz? Büyük düğmeli ve sesli sade kullanım mı, yoksa tüm özellikler mi?"
         2 -> "Hangi şehirde yaşıyorsunuz? Namaz vakitleri buna göre gösterilir."
-        3 -> "Namaz vakti geldiğinde telefonunuza bildirim göndereyim mi?"
+        3 -> "Namaz vakti geldiğinde size sesli haber vereyim mi?"
         else -> "Kısaca anlatayım. " + tour.joinToString(" ") { it.second }
     }
     LaunchedEffect(step, soundOn, easy) { if (soundOn) speaker.speak(speech) else speaker.stop() }
@@ -124,18 +125,26 @@ internal fun OnboardingScreen() {
                     }
                     3 -> {
                         StepTitle("Vakit bildirimi")
-                        StepText("Namaz vakti geldiğinde telefonunuza bildirim gelsin mi?")
-                        BigButton("🔔", "Evet, haber ver", {
-                            notifyAnswer = true
-                            enablePrayerNotifications(context)
-                            if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
-                                permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        StepText("Namaz vakti girince telefon “Öğle namazı vakti girdi” diye sesli söylesin mi?")
+                        if (notifyAnswer != true) {
+                            BigButton("🔔", "Evet, haber ver", {
+                                notifyAnswer = true
+                                enablePrayerNotifications(context)
+                                if (Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
+                                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                // Stay on this step while exact-alarm access still has to be granted.
+                                if (exactAllowed) step++
+                                else if (soundOn) speaker.speak("Son bir izin gerekiyor. Tam vaktinde haber verebilmem için İzni aç düğmesine basın.")
+                            })
+                            OutlinedButton(onClick = { notifyAnswer = false; step++ },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp), shape = RoundedCornerShape(22.dp)) {
+                                Text("Şimdi değil", fontSize = 22.sp)
                             }
-                            step++
-                        })
-                        OutlinedButton(onClick = { notifyAnswer = false; step++ },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp), shape = RoundedCornerShape(22.dp)) {
-                            Text("Şimdi değil", fontSize = 22.sp)
+                        } else if (!exactAllowed) {
+                            ExactAlarmNotice(large = true)
+                        } else {
+                            StepText("✓ Vakitlerde sesli haber vereceğim.", color = Emerald)
                         }
                         if (city.isBlank()) StepText("Not: Bildirim için önce şehir seçilmeli.", small = true)
                     }
